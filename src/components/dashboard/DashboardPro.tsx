@@ -188,28 +188,45 @@ export default function DashboardPro() {
 
             {/* Action Buttons */}
             <div className="space-y-3 mb-6">
-              {/* Register Workout */}
-              <button
-                onClick={() => setShowWorkoutForm(!showWorkoutForm)}
-                className="w-full bg-[#3FB950] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#3FB950]/90 transition flex justify-between items-center"
-              >
-                <div>
-                  <div className="text-2xl mb-1">🏃</div>
-                  <h2 className="font-bold">Registrar Entreno</h2>
-                  <p className="text-sm opacity-75">30 segundos</p>
-                </div>
-                <svg
-                  className={`w-6 h-6 transition-transform ${showWorkoutForm ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Register or Edit Workout */}
+              {!showWorkoutForm ? (
+                <button
+                  onClick={() => {
+                    setEditingWorkoutId(null)
+                    setShowWorkoutForm(true)
+                  }}
+                  className="w-full bg-[#3FB950] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#3FB950]/90 transition flex justify-between items-center"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-              </button>
-
-              {showWorkoutForm && (
+                  <div>
+                    <div className="text-2xl mb-1">🏃</div>
+                    <h2 className="font-bold">Registrar Entreno</h2>
+                    <p className="text-sm opacity-75">30 segundos</p>
+                  </div>
+                  <svg
+                    className="w-6 h-6 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </button>
+              ) : (
                 <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-bold text-[#E6EDF3]">
+                      {editingWorkoutId ? '✏️ Editar Entreno' : '🏃 Nuevo Entreno'}
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowWorkoutForm(false)
+                        setEditingWorkoutId(null)
+                      }}
+                      className="text-[#8B949E] hover:text-[#E6EDF3] text-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
                   <PostWorkoutForm
                     workoutId={editingWorkoutId || undefined}
                     initialData={editingWorkout ? {
