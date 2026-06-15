@@ -201,7 +201,7 @@ export default function DashboardPro() {
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-2 mb-6">
               {/* Register or Edit Workout */}
               {!showWorkoutForm ? (
                 <button
@@ -209,15 +209,14 @@ export default function DashboardPro() {
                     setEditingWorkoutId(null)
                     setShowWorkoutForm(true)
                   }}
-                  className="w-full bg-[#3FB950] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#3FB950]/90 transition flex justify-between items-center"
+                  className="w-full bg-[#3FB950] text-[#0D1117] rounded-lg p-3 font-bold text-left hover:bg-[#3FB950]/90 transition flex justify-between items-center"
                 >
                   <div>
-                    <div className="text-2xl mb-1">🏃</div>
-                    <h2 className="font-bold">Registrar Entreno</h2>
-                    <p className="text-sm opacity-75">30 segundos</p>
+                    <div className="text-lg mb-0.5">🏃</div>
+                    <h2 className="text-sm font-bold">Registrar</h2>
                   </div>
                   <svg
-                    className="w-6 h-6 transition-transform"
+                    className="w-5 h-5 transition-transform"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -226,17 +225,17 @@ export default function DashboardPro() {
                   </svg>
                 </button>
               ) : (
-                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-[#E6EDF3]">
-                      {editingWorkoutId ? '✏️ Editar Entreno' : '🏃 Nuevo Entreno'}
+                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-xs font-bold text-[#E6EDF3]">
+                      {editingWorkoutId ? '✏️ Editar' : '🏃 Entreno'}
                     </h3>
                     <button
                       onClick={() => {
                         setShowWorkoutForm(false)
                         setEditingWorkoutId(null)
                       }}
-                      className="text-[#8B949E] hover:text-[#E6EDF3] text-lg"
+                      className="text-[#8B949E] hover:text-[#E6EDF3] text-sm"
                     >
                       ✕
                     </button>
@@ -270,15 +269,14 @@ export default function DashboardPro() {
               {/* Daily State */}
               <button
                 onClick={() => setShowDailyStateForm(!showDailyStateForm)}
-                className="w-full bg-[#388BFD] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#388BFD]/90 transition flex justify-between items-center"
+                className="w-full bg-[#388BFD] text-[#0D1117] rounded-lg p-3 font-bold text-left hover:bg-[#388BFD]/90 transition flex justify-between items-center"
               >
                 <div>
-                  <div className="text-2xl mb-1">😌</div>
-                  <h2 className="font-bold">Cómo te sientes</h2>
-                  <p className="text-sm opacity-75">Peso, estrés, sueño</p>
+                  <div className="text-lg mb-0.5">😌</div>
+                  <h2 className="text-sm font-bold">Estado</h2>
                 </div>
                 <svg
-                  className={`w-6 h-6 transition-transform ${showDailyStateForm ? 'rotate-180' : ''}`}
+                  className={`w-5 h-5 transition-transform ${showDailyStateForm ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -288,7 +286,7 @@ export default function DashboardPro() {
               </button>
 
               {showDailyStateForm && (
-                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
+                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3">
                   <DailyStateForm onSubmit={() => setShowDailyStateForm(false)} />
                 </div>
               )}
