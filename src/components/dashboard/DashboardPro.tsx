@@ -4,9 +4,11 @@ import DailyStateForm from '../forms/DailyStateForm'
 import { useWorkouts } from '../../hooks/useWorkouts'
 import { useDailyState } from '../../hooks/useDailyState'
 import { useMacrocycle } from '../../hooks/useMacrocycle'
+import { RACE_CALENDAR, CP3_CRITERIA, type RaceEvent } from '../../data/raceCalendar'
 
 export default function DashboardPro() {
-  const [view, setView] = useState<'dashboard' | 'progress'>('dashboard')
+  const [view, setView] = useState<'dashboard' | 'progress' | 'races'>('dashboard')
+  const [selectedRace, setSelectedRace] = useState<RaceEvent | null>(null)
   const [showWorkoutForm, setShowWorkoutForm] = useState(false)
   const [showDailyStateForm, setShowDailyStateForm] = useState(false)
   const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null)
@@ -125,6 +127,18 @@ export default function DashboardPro() {
               <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"></rect>
             </svg>
             <span>Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => setView('races')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-l-2 transition ${
+              view === 'races'
+                ? 'border-[#3FB950] bg-[#3FB950]/5 text-[#E6EDF3]'
+                : 'border-transparent text-[#8B949E] hover:text-[#E6EDF3]'
+            }`}
+          >
+            <span className="text-lg">🏁</span>
+            <span>Carreras</span>
           </button>
 
           <button
@@ -379,6 +393,142 @@ export default function DashboardPro() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Races View */}
+        {view === 'races' && (
+          <div>
+            <div className="mb-6">
+              <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1">
+                CALENDARIO ANUAL
+              </div>
+              <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">Carreras Test</h1>
+              <div className="text-sm text-[#8B949E]">Todas las pruebas del plan Ultra 80K</div>
+            </div>
+
+            {!selectedRace ? (
+              <div className="space-y-2">
+                {RACE_CALENDAR.map((race) => (
+                  <button
+                    key={race.id}
+                    onClick={() => setSelectedRace(race)}
+                    className="w-full bg-[#161B22] border border-[#21262D] rounded-lg p-4 text-left hover:border-[#3FB950]/50 transition"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-bold text-[#E6EDF3]">{race.name}</h3>
+                          {race.isCheckpoint && (
+                            <span className="text-xs bg-[#A371F7]/20 text-[#A371F7] px-2 py-1 rounded font-mono font-bold">
+                              {race.checkpointName}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-[#8B949E] mb-2">{race.date}</div>
+                        <div className="grid grid-cols-4 gap-3 text-xs">
+                          <div>
+                            <span className="text-[#8B949E]">Distancia</span>
+                            <div className="font-mono font-bold text-[#E6EDF3]">
+                              {race.distance}km {race.elevation > 0 && `+${race.elevation}m`}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[#8B949E]">Tiempo</span>
+                            <div className="font-mono font-bold text-[#388BFD]">{race.timeEstimate}</div>
+                          </div>
+                          <div>
+                            <span className="text-[#8B949E]">Ritmo</span>
+                            <div className="font-mono font-bold text-[#388BFD]">{race.pace}</div>
+                          </div>
+                          <div>
+                            <span className="text-[#8B949E]">Tipo</span>
+                            <div className="font-mono font-bold text-[#3FB950]">{race.type}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <svg className="w-5 h-5 text-[#8B949E] flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-6">
+                <button
+                  onClick={() => setSelectedRace(null)}
+                  className="flex items-center gap-2 text-[#388BFD] hover:text-[#388BFD] text-sm font-bold mb-6"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Volver al listado
+                </button>
+
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h2 className="text-2xl font-black text-[#E6EDF3]">{selectedRace.name}</h2>
+                    {selectedRace.isCheckpoint && (
+                      <span className="text-lg bg-[#A371F7]/20 text-[#A371F7] px-3 py-1 rounded font-mono font-bold">
+                        {selectedRace.checkpointName}
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-mono text-sm text-[#8B949E]">{selectedRace.mesocycle}</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-[#0D1117] border border-[#21262D] rounded-lg p-4">
+                    <div className="text-xs uppercase text-[#8B949E] font-bold mb-2">Fecha</div>
+                    <div className="font-mono text-lg font-bold text-[#E6EDF3]">{selectedRace.date}</div>
+                  </div>
+                  <div className="bg-[#0D1117] border border-[#21262D] rounded-lg p-4">
+                    <div className="text-xs uppercase text-[#8B949E] font-bold mb-2">Distancia</div>
+                    <div className="font-mono text-lg font-bold text-[#E6EDF3]">
+                      {selectedRace.distance}km {selectedRace.elevation > 0 && `/ +${selectedRace.elevation}m`}
+                    </div>
+                  </div>
+                  <div className="bg-[#0D1117] border border-[#21262D] rounded-lg p-4">
+                    <div className="text-xs uppercase text-[#8B949E] font-bold mb-2">Tiempo estimado</div>
+                    <div className="font-mono text-lg font-bold text-[#388BFD]">{selectedRace.timeEstimate}</div>
+                  </div>
+                  <div className="bg-[#0D1117] border border-[#21262D] rounded-lg p-4">
+                    <div className="text-xs uppercase text-[#8B949E] font-bold mb-2">Ritmo medio</div>
+                    <div className="font-mono text-lg font-bold text-[#388BFD]">{selectedRace.pace}</div>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-sm font-bold text-[#8B949E] uppercase tracking-wider mb-3">Objetivo</h3>
+                  <p className="text-[#E6EDF3] leading-relaxed">{selectedRace.objective}</p>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-sm font-bold text-[#8B949E] uppercase tracking-wider mb-3">Criterio de éxito</h3>
+                  <p className="text-[#E6EDF3] leading-relaxed">{selectedRace.successCriteria}</p>
+                </div>
+
+                {selectedRace.checkpointName === 'CP3' && (
+                  <div className="bg-[#0D1117] border border-[#21262D] rounded-lg p-4">
+                    <h3 className="text-sm font-bold text-[#8B949E] uppercase tracking-wider mb-3">Criterios CP3 para validar SUB 11h</h3>
+                    <div className="space-y-2">
+                      {CP3_CRITERIA.map((c, i) => (
+                        <div key={i} className="flex items-start gap-3 pb-2 border-b border-[#21262D] last:border-b-0">
+                          <div className="min-w-fit">
+                            <div className="text-xs font-mono font-bold text-[#3FB950]">{c.timeRange}</div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-xs text-[#8B949E]">Proyección: <span className="text-[#388BFD] font-mono">{c.projection}</span></div>
+                            <div className="text-sm text-[#E6EDF3] mt-1">{c.decision}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </main>
