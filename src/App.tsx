@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
-import Dashboard from './components/dashboard/Dashboard'
-import Header from './components/common/Header'
+import DashboardPro from './components/dashboard/DashboardPro'
 import { macrocycleService } from './services/macrocycleService'
 
 function App() {
@@ -29,22 +28,20 @@ function App() {
 
   if (initError && !initialized) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0D1117] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Error de Inicialización</h1>
-          <p className="text-gray-600 mt-2">{initError}</p>
-          <p className="text-sm text-gray-500 mt-4">Verifica tu configuración de Supabase en .env.local</p>
+          <h1 className="text-2xl font-bold text-red-400">Error de Inicialización</h1>
+          <p className="text-[#8B949E] mt-2">{initError}</p>
+          <p className="text-sm text-[#8B949E] mt-4">Verifica tu configuración de Supabase en .env.local</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="max-w-7xl mx-auto">
-        <Dashboard />
-      </main>
+    <div>
+      <DashboardPro />
+    </div>
       <Toaster
         position="bottom-right"
         toastOptions={{

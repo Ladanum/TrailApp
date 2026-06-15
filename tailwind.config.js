@@ -7,32 +7,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        trail: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          200: '#bbf7d0',
-          300: '#86efac',
-          400: '#4ade80',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
-          800: '#166534',
-          900: '#145231',
+        dark: {
+          'bg': '#0D1117',
+          'card': '#161B22',
+          'border': '#21262D',
+          'text': '#E6EDF3',
+          'muted': '#8B949E',
+        },
+        accent: {
+          'blue': '#388BFD',
+          'green': '#3FB950',
+          'orange': '#F0883E',
+          'purple': '#A371F7',
         },
       },
-      animation: {
-        'fade-in': 'fadeIn 0.5s ease-in',
-        'slide-up': 'slideUp 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(10px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
+      fontFamily: {
+        'mono': "'JetBrains Mono', monospace",
+        'inter': "'Inter', system-ui, sans-serif",
       },
     },
   },
