@@ -54,7 +54,11 @@ export default function DailyStateForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 bg-white rounded-2xl p-6 shadow-lg">
+      <div className="space-y-2 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Estado del Día</h3>
+        <p className="text-sm text-gray-600">Cómo te sientes hoy</p>
+      </div>
       {/* Date & Weight */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
@@ -62,7 +66,7 @@ export default function DailyStateForm({ onSubmit }: Props) {
           <input
             type="date"
             {...register('date', { required: true })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           />
         </div>
 
@@ -72,7 +76,7 @@ export default function DailyStateForm({ onSubmit }: Props) {
             type="number"
             step="0.1"
             {...register('weight_kg')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           />
         </div>
       </div>
@@ -128,7 +132,7 @@ export default function DailyStateForm({ onSubmit }: Props) {
             min="0"
             max="24"
             {...register('sleep_hours')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           />
         </div>
 
@@ -162,9 +166,9 @@ export default function DailyStateForm({ onSubmit }: Props) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-trail-600 text-white px-4 py-2 rounded-md hover:bg-trail-700 disabled:bg-gray-400 transition-colors"
+        className="w-full bg-gradient-to-r from-trail-600 to-trail-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:from-trail-700 hover:to-trail-600 disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none transition-all duration-200 transform hover:-translate-y-0.5"
       >
-        {isSubmitting ? 'Guardando...' : 'Guardar Estado del Día'}
+        {isSubmitting ? 'Guardando...' : '✓ Guardar Estado del Día'}
       </button>
     </form>
   )

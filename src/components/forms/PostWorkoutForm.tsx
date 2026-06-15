@@ -72,15 +72,19 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 bg-white rounded-2xl p-6 shadow-lg">
       {/* Basic Info */}
+      <div className="space-y-2 mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Registrar Entreno</h3>
+        <p className="text-sm text-gray-600">Completa los detalles de tu sesión</p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Fecha</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">Fecha</label>
           <input
             type="date"
             {...register('date', { required: true })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-trail-500 focus:ring-trail-500"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           />
         </div>
 
@@ -90,7 +94,7 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
             type="number"
             step="0.1"
             {...register('distance_km', { required: true, min: 0 })}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-trail-500 focus:ring-trail-500"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           />
         </div>
 
@@ -185,7 +189,7 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
           <label className="block text-sm font-medium text-gray-700">Terreno</label>
           <select
             {...register('surface')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900"
+            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:border-trail-500 focus:ring-2 focus:ring-trail-200 transition-all duration-200 bg-white"
           >
             <option value="trail">Trail</option>
             <option value="road">Carretera</option>
@@ -224,9 +228,9 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full bg-trail-600 text-white px-4 py-2 rounded-md hover:bg-trail-700 disabled:bg-gray-400 transition-colors"
+        className="w-full bg-gradient-to-r from-trail-600 to-trail-500 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:from-trail-700 hover:to-trail-600 disabled:from-gray-400 disabled:to-gray-400 disabled:shadow-none transition-all duration-200 transform hover:-translate-y-0.5"
       >
-        {isSubmitting ? 'Guardando...' : 'Registrar Entreno'}
+        {isSubmitting ? 'Guardando...' : '✓ Registrar Entreno'}
       </button>
     </form>
   )

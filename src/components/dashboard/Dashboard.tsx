@@ -20,18 +20,18 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('hoy')
 
   return (
-    <div className="py-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Navigation Tabs */}
-      <div className="flex overflow-x-auto bg-white border-b border-gray-200 sticky top-0 z-40">
-        <nav className="flex space-x-8 px-4 sm:px-6 lg:px-8" aria-label="Tabs">
+      <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
+        <nav className="flex overflow-x-auto px-4 sm:px-6 lg:px-8 gap-2" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
+              className={`py-4 px-4 font-medium text-sm flex items-center gap-2 whitespace-nowrap rounded-t-lg transition-all duration-200 ${
                 activeTab === tab.id
-                  ? 'border-trail-600 text-trail-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'bg-trail-50 text-trail-700 border-b-2 border-trail-600 shadow-sm'
+                  : 'text-gray-600 hover:text-trail-600 hover:bg-gray-50'
               }`}
             >
               {tab.icon}
@@ -42,12 +42,14 @@ export default function Dashboard() {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6 px-4 sm:px-6 lg:px-8">
-        {activeTab === 'hoy' && <TabHoy />}
-        {activeTab === 'semana' && <TabSemana />}
-        {activeTab === 'mesociclo' && <TabMesociclo />}
-        {activeTab === 'graficos' && <TabGraficos />}
-        {activeTab === 'fuerza' && <TabFuerza />}
+      <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="animate-fade-in">
+          {activeTab === 'hoy' && <TabHoy />}
+          {activeTab === 'semana' && <TabSemana />}
+          {activeTab === 'mesociclo' && <TabMesociclo />}
+          {activeTab === 'graficos' && <TabGraficos />}
+          {activeTab === 'fuerza' && <TabFuerza />}
+        </div>
       </div>
     </div>
   )
