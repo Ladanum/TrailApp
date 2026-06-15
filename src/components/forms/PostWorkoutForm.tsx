@@ -26,11 +26,13 @@ interface PostWorkoutFormData {
 
 interface Props {
   onSubmit?: () => void
+  workoutId?: string
+  initialData?: PostWorkoutFormData
 }
 
-export default function PostWorkoutForm({ onSubmit }: Props) {
+export default function PostWorkoutForm({ onSubmit, workoutId, initialData }: Props) {
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<PostWorkoutFormData>({
-    defaultValues: {
+    defaultValues: initialData || {
       date: new Date().toISOString().split('T')[0],
       duration_minutes: 60,
       elevation_gain: 0,
@@ -62,12 +64,17 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
         source: 'manual',
       }
 
-      await workoutService.addWorkout(workoutData)
-      toast.success('Entreno registrado correctamente!')
+      if (workoutId) {
+        await workoutService.updateWorkout(workoutId, workoutData)
+        toast.success('Entreno actualizado correctamente!')
+      } else {
+        await workoutService.addWorkout(workoutData)
+        toast.success('Entreno registrado correctamente!')
+      }
       reset()
       onSubmit?.()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al registrar entreno')
+      toast.error(error instanceof Error ? error.message : `Error al ${workoutId ? 'actualizar' : 'registrar'} entreno`)
     }
   }
 
@@ -75,8 +82,12 @@ export default function PostWorkoutForm({ onSubmit }: Props) {
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6 bg-white rounded-2xl p-6 shadow-lg">
       {/* Basic Info */}
       <div className="space-y-2 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Registrar Entreno</h3>
-        <p className="text-sm text-gray-600">Completa los detalles de tu sesión</p>
+        <h3 className="text-lg font-semibold text-gray-900">
+          {workoutId ? '✏️ Actualizar Entreno' : '🏃 Registrar Entreno'}
+        </h3>
+        <p className="text-sm text-gray-600">
+          {workoutId ? 'Modifica los detalles de tu sesión' : 'Completa los detalles de tu sesión'}
+        </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

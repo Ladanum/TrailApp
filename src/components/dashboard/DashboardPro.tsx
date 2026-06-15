@@ -9,10 +9,28 @@ export default function DashboardPro() {
   const [view, setView] = useState<'dashboard' | 'progress'>('dashboard')
   const [showWorkoutForm, setShowWorkoutForm] = useState(false)
   const [showDailyStateForm, setShowDailyStateForm] = useState(false)
+  const [editingWorkoutId, setEditingWorkoutId] = useState<string | null>(null)
 
-  const { workouts, loading: workoutsLoading } = useWorkouts()
+  const { workouts, loading: workoutsLoading, deleteWorkout } = useWorkouts()
   const { dailyState, loading: dailyStateLoading } = useDailyState()
   const { macrophases, currentPhase } = useMacrocycle()
+
+  const handleDeleteWorkout = async (id: string) => {
+    if (confirm('¿Estás seguro de que quieres eliminar este entreno?')) {
+      try {
+        await deleteWorkout(id)
+      } catch (error) {
+        alert('Error al eliminar entreno')
+      }
+    }
+  }
+
+  const handleEditWorkout = (workout: any) => {
+    setEditingWorkoutId(workout.id)
+    setShowWorkoutForm(true)
+  }
+
+  const editingWorkout = editingWorkoutId ? workouts.find(w => w.id === editingWorkoutId) : null
 
   // Calculate stats
   const thisWeekWorkouts = workouts.filter((w) => {
@@ -192,7 +210,29 @@ export default function DashboardPro() {
 
               {showWorkoutForm && (
                 <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
-                  <PostWorkoutForm onSubmit={() => setShowWorkoutForm(false)} />
+                  <PostWorkoutForm
+                    workoutId={editingWorkoutId || undefined}
+                    initialData={editingWorkout ? {
+                      date: editingWorkout.date,
+                      distance_km: editingWorkout.distance_km,
+                      duration_minutes: editingWorkout.duration_minutes,
+                      elevation_gain: editingWorkout.elevation_gain,
+                      elevation_loss: editingWorkout.elevation_loss,
+                      avg_heart_rate: editingWorkout.avg_heart_rate,
+                      avg_pace_min_km: editingWorkout.avg_pace_min_km,
+                      surface: editingWorkout.surface,
+                      difficulty: editingWorkout.difficulty,
+                      zone: editingWorkout.zone,
+                      rpe: editingWorkout.rpe,
+                      sensations: editingWorkout.sensations,
+                      completion_percentage: editingWorkout.completion_percentage,
+                      notes: editingWorkout.notes,
+                    } : undefined}
+                    onSubmit={() => {
+                      setShowWorkoutForm(false)
+                      setEditingWorkoutId(null)
+                    }}
+                  />
                 </div>
               )}
 
@@ -228,16 +268,28 @@ export default function DashboardPro() {
               <h3 className="text-sm font-bold text-[#8B949E] uppercase tracking-wider mb-3">Entrenamientos Recientes</h3>
               <div className="space-y-2">
                 {thisWeekWorkouts.slice(0, 5).map((w) => (
-                  <div key={w.id} className="bg-[#161B22] border border-[#21262D] rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-[#E6EDF3]">{w.distance_km}km</div>
-                        <div className="text-xs text-[#8B949E] mt-1">{w.duration_minutes} min</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-[#8B949E]">{new Date(w.date).toLocaleDateString()}</div>
-                        {w.zone && <div className="text-xs text-[#388BFD] font-mono font-bold mt-1">{w.zone}</div>}
-                      </div>
+                  <div key={w.id} className="bg-[#161B22] border border-[#21262D] rounded-lg p-3 flex justify-between items-start hover:border-[#3FB950]/50 transition">
+                    <div className="flex-1">
+                      <div className="font-bold text-[#E6EDF3]">{w.distance_km}km</div>
+                      <div className="text-xs text-[#8B949E] mt-1">{w.duration_minutes} min</div>
+                    </div>
+                    <div className="text-right mr-3">
+                      <div className="text-xs text-[#8B949E]">{new Date(w.date).toLocaleDateString()}</div>
+                      {w.zone && <div className="text-xs text-[#388BFD] font-mono font-bold mt-1">{w.zone}</div>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditWorkout(w)}
+                        className="text-[#388BFD] hover:text-[#388BFD] text-xs font-bold px-2 py-1 hover:bg-[#388BFD]/10 rounded transition"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleDeleteWorkout(w.id)}
+                        className="text-[#F0883E] hover:text-[#F0883E] text-xs font-bold px-2 py-1 hover:bg-[#F0883E]/10 rounded transition"
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 ))}
