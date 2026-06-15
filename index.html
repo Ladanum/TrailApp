@@ -1,13 +1,1812 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>trail-app</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrailApp — Ultra 80K</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f5f5f5; overflow: hidden; }
+body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #1a1a1a; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+button { cursor: pointer; font-family: inherit; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fadeIn 0.18s ease; }
+
+.mono { font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace; }
+
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 220px; flex-shrink: 0;
+  background: #f5f5f5;
+  border-right: 1px solid #e0e0e0;
+  display: flex; flex-direction: column;
+  transition: width 0.2s;
+}
+@media (max-width: 860px) {
+  #sidebar { width: 56px; }
+  .sb-label { display: none !important; }
+}
+
+.sb-brand {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.sb-app-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; color: #3FB950;
+  font-weight: 600; text-transform: uppercase; margin-bottom: 2px;
+}
+.sb-race-name { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 3px; color: #0D1117; }
+.sb-race-sub { font-family: monospace; font-size: 10px; color: #666666; }
+
+.sb-nav { padding: 10px 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px 9px 18px;
+  background: transparent; border: none;
+  border-left: 2px solid transparent;
+  color: #666666; width: 100%; text-align: left;
+  font-size: 13px; font-weight: 400;
+  transition: background 0.1s, color 0.1s;
+}
+.nav-btn.active {
+  background: rgba(63,185,80,0.1);
+  border-left-color: #3FB950;
+  color: #0D1117; font-weight: 600;
+}
+.nav-btn:hover:not(.active) { background: rgba(0,0,0,0.05); color: #333333; }
+.nav-btn svg { flex-shrink: 0; }
+
+.sb-countdown {
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+}
+.sb-countdown-label {
+  font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase;
+  color: #666666; margin-bottom: 5px; font-weight: 500;
+}
+.sb-countdown-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 38px; font-weight: 600; color: #3FB950;
+  line-height: 1; letter-spacing: -0.03em;
+}
+.sb-countdown-date { font-family: monospace; font-size: 10px; color: #666666; margin-top: 6px; }
+
+/* MAIN */
+#main { flex: 1; overflow-y: auto; padding: 32px 36px; min-width: 0; }
+
+/* CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat-card {
+  background: #0D1117; border: 1px solid #21262D;
+  border-radius: 6px; padding: 14px;
+}
+.stat-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.11em;
+  color: #8B949E; margin-bottom: 4px; font-weight: 600;
+}
+.stat-val {
+  font-family: monospace; font-size: 20px; font-weight: 600;
+}
+.stat-sub { font-size: 10px; color: #8B949E; margin-top: 2px; }
+
+/* SESSION CARDS */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(128px, 1fr));
+  gap: 8px; min-width: 700px;
+}
+.week-scroll { overflow-x: auto; margin-bottom: 20px; }
+.session-card {
+  background: #0D1117; border: 1px solid #21262D;
+  border-radius: 8px; padding: 12px;
+  cursor: pointer; display: flex; flex-direction: column;
+  min-height: 168px;
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.session-card:hover { opacity: 0.82; }
+.session-card.today { border: 1.5px solid #3FB950; }
+.session-card.done { background: rgba(63,185,80,0.04); border-color: rgba(63,185,80,0.3); }
+
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.card-day { font-family: monospace; font-size: 10px; font-weight: 600; color: #8B949E; letter-spacing: 0.07em; }
+.card-date { font-family: monospace; font-size: 10px; color: #8B949E; margin-bottom: 9px; }
+.card-desc { font-size: 11px; color: #8B949E; margin-top: 8px; line-height: 1.45; flex: 1; }
+.card-bottom { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; }
+.card-dur { font-family: monospace; font-size: 11px; color: #E6EDF3; font-weight: 500; }
+
+/* BADGE */
+.badge {
+  border-radius: 4px; padding: 2px 8px; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.06em; display: inline-block;
+  font-family: monospace;
+}
+.badge-zone  { background: rgba(56,139,253,0.14);  color: #388BFD; border: 1px solid rgba(56,139,253,0.28); }
+.badge-gym   { background: rgba(163,113,247,0.14); color: #A371F7; border: 1px solid rgba(163,113,247,0.28); }
+.badge-tl    { background: rgba(63,185,80,0.14);   color: #3FB950; border: 1px solid rgba(63,185,80,0.28); }
+.badge-rec   { background: rgba(139,148,158,0.14); color: #8B949E; border: 1px solid rgba(139,148,158,0.28); }
+.badge-quality { background: rgba(240,136,62,0.14); color: #F0883E; border: 1px solid rgba(240,136,62,0.28); }
+
+.alert-chip {
+  font-size: 9px; color: #F0883E;
+  background: rgba(240,136,62,0.1); border: 1px solid rgba(240,136,62,0.2);
+  border-radius: 3px; padding: 2px 5px; white-space: nowrap;
+}
+
+/* DETAIL VIEW */
+.back-btn {
+  background: none; border: none; color: #8B949E;
+  font-size: 13px; padding: 0; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 6px;
+}
+.back-btn:hover { color: #C9D1D9; }
+
+.detail-wrap { max-width: 680px; }
+.detail-date { font-family: monospace; font-size: 10px; color: #8B949E; letter-spacing: 0.13em; margin-bottom: 8px; text-transform: uppercase; }
+.detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.detail-title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.4; margin-bottom: 16px; }
+
+.info-card {
+  background: #0D1117; border: 1px solid #21262D;
+  border-radius: 8px; padding: 16px; margin-bottom: 12px;
+}
+.info-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 6px; font-weight: 600; }
+.info-zone { font-family: monospace; font-size: 18px; font-weight: 600; color: #388BFD; margin-bottom: 10px; }
+.info-desc { font-size: 13px; color: #8B949E; line-height: 1.65; }
+
+.block-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.block-card { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.block-id {
+  width: 24px; height: 24px;
+  background: rgba(163,113,247,0.15); border: 1px solid rgba(163,113,247,0.25);
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 11px; font-weight: 700; color: #A371F7; flex-shrink: 0;
+}
+.block-name { font-size: 13px; font-weight: 600; }
+.ex-table { display: grid; grid-template-columns: 1fr 40px 56px; }
+.ex-th {
+  font-size: 9px; text-transform: uppercase; color: #8B949E;
+  font-weight: 600; letter-spacing: 0.1em; padding-bottom: 8px;
+}
+.ex-th:not(:first-child) { text-align: right; }
+.ex-cell { font-size: 13px; color: #E6EDF3; padding: 9px 0; border-top: 1px solid #21262D; }
+.ex-sets { font-family: monospace; font-size: 12px; color: #A371F7; padding: 9px 0; border-top: 1px solid #21262D; text-align: right; }
+.ex-reps { font-family: monospace; font-size: 12px; color: #8B949E; padding: 9px 0; border-top: 1px solid #21262D; text-align: right; }
+
+.complete-btn {
+  width: 100%; padding: 13px; border-radius: 8px;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+.complete-btn.undone { background: #3FB950; border: 1px solid #3FB950; color: #0D1117; }
+.complete-btn.undone:hover { background: #52cb63; }
+.complete-btn.done-state { background: transparent; border: 1px solid rgba(63,185,80,0.5); color: #3FB950; }
+.complete-btn.done-state:hover { background: rgba(63,185,80,0.05); }
+
+/* PROGRESS */
+.prog-grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 20px; }
+.prog-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+.cal-wrap { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.cal-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 12px; font-weight: 600; }
+.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+.cal-dow-cell { font-family: monospace; font-size: 9px; color: #8B949E; text-align: center; padding: 2px 0; }
+.cal-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; font-family: monospace; font-size: 10px;
+  border: 1px solid transparent;
+}
+
+.cp-wrap { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.cp-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 14px; font-weight: 600; }
+.cp-list { display: flex; flex-direction: column; gap: 14px; }
+.cp-item { display: flex; align-items: flex-start; gap: 10px; }
+.cp-badge {
+  min-width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 8px; font-weight: 700;
+  flex-shrink: 0; letter-spacing: 0.04em;
+}
+.cp-name { font-size: 12px; font-weight: 500; line-height: 1.3; }
+.cp-date { font-family: monospace; font-size: 10px; color: #8B949E; margin-top: 2px; }
+
+.phases-wrap { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.phases-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 12px; font-weight: 600; }
+.phases-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin-bottom: 14px; }
+.phases-list { display: flex; flex-direction: column; gap: 10px; }
+.phase-row { display: flex; align-items: center; gap: 10px; }
+.phase-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.phase-id { font-family: monospace; font-size: 10px; font-weight: 600; width: 36px; }
+.phase-name { font-size: 12px; flex: 1; }
+.phase-active { font-size: 9px; color: #3FB950; background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.2); border-radius: 3px; padding: 1px 5px; letter-spacing: 0.05em; }
+.phase-weeks { font-family: monospace; font-size: 10px; color: #8B949E; }
+.phase-dates { font-size: 10px; color: #8B949E; }
+
+/* PROGRESS DATA TABLE */
+.progress-table-wrap { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; margin-bottom: 20px; overflow-x: auto; }
+.progress-table { width: 100%; border-collapse: collapse; min-width: 1400px; }
+.progress-table th { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: #8B949E; font-weight: 600; padding: 10px; border-bottom: 1px solid #21262D; text-align: left; }
+.progress-table td { font-size: 12px; padding: 10px; border-bottom: 1px solid #21262D; color: #E6EDF3; }
+.progress-table input { background: #0D1117; border: 1px solid #21262D; color: #E6EDF3; padding: 6px; border-radius: 4px; font-size: 12px; font-family: monospace; width: 100%; }
+.progress-table input:focus { outline: none; border-color: #388BFD; box-shadow: 0 0 4px rgba(56,139,253,0.2); }
+.progress-table select { background: #0D1117; border: 1px solid #21262D; color: #E6EDF3; padding: 6px; border-radius: 4px; font-size: 12px; width: 100%; }
+.progress-table select:focus { outline: none; border-color: #388BFD; }
+.progress-table .computed { color: #8B949E; cursor: not-allowed; background: rgba(139,148,158,0.05); }
+.progress-table .error { background: rgba(240,88,88,0.1) !important; border-color: #f05858 !important; }
+.progress-table .warning { background: rgba(240,136,62,0.1) !important; border-color: #F0883E !important; }
+.progress-table .success { background: rgba(63,185,80,0.1) !important; border-color: #3FB950 !important; }
+
+.chart-container { position: relative; height: 300px; margin-bottom: 24px; background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.chart-title { font-size: 12px; font-weight: 600; color: #E6EDF3; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+.control-buttons { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.control-btn { background: #0D1117; border: 1px solid #21262D; color: #E6EDF3; padding: 10px 16px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.control-btn:hover { background: #21262D; border-color: #30363d; }
+.control-btn.primary { background: #3FB950; border: 1px solid #3FB950; color: #0D1117; }
+.control-btn.primary:hover { background: #52cb63; }
+.control-btn.danger { background: rgba(240,88,88,0.15); border: 1px solid rgba(240,88,88,0.3); color: #f05858; }
+.control-btn.danger:hover { background: rgba(240,88,88,0.25); }
+
+/* PLAN BAR */
+.plan-bar { background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 11px 14px; margin-bottom: 18px; }
+.plan-bar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.plan-bar-label { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #8B949E; font-weight: 600; }
+.plan-bar-sem { font-family: monospace; font-size: 10px; color: #8B949E; }
+.plan-bar-track { height: 3px; background: #21262D; border-radius: 2px; margin-bottom: 7px; }
+.plan-bar-fill { height: 3px; width: 1.9%; background: #3FB950; border-radius: 2px; }
+.plan-bar-meta { display: flex; gap: 14px; font-size: 10px; color: #8B949E; flex-wrap: wrap; align-items: center; }
+
+/* MOUNTAIN SVG */
+.mountain-svg { display: block; margin: 0 0 16px; }
+
+/* PAGE HEADER */
+.page-eyebrow { font-family: monospace; font-size: 10px; color: #3FB950; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; }
+.page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: #8B949E; }
+
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.session-count-card { background: #0D1117; border: 1px solid #21262D; border-radius: 8px; padding: 10px 16px; text-align: right; flex-shrink: 0; }
+.session-count-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #8B949E; margin-bottom: 3px; font-weight: 500; }
+.session-count-val { font-family: monospace; font-size: 24px; font-weight: 600; color: #3FB950; line-height: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sb-brand sb-label">
+      <div class="sb-app-name">TRAILAPP</div>
+      <div class="sb-race-name">Ultra 80K</div>
+      <div class="sb-race-sub">Sub 11h · 15 jun 2027</div>
+    </div>
+    <div class="sb-nav">
+      <button class="nav-btn active" id="btn-dashboard" onclick="setView('dashboard')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="8.5" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="1" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Dashboard</span>
+      </button>
+      <button class="nav-btn" id="btn-progress" onclick="setView('progress')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M1.5 11.5L5 7L8 9.5L13.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M1.5 13.5H13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Progreso</span>
+      </button>
+      <button class="nav-btn" id="btn-races" onclick="setView('races')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M7.5 1.5V13.5M1.5 4H13.5M3 10H12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Carreras</span>
+      </button>
+    </div>
+    <div class="sb-countdown sb-label">
+      <div class="sb-countdown-label">Días hasta la carrera</div>
+      <div class="sb-countdown-num" id="days-count">365</div>
+      <div class="sb-countdown-date">15 jun 2027</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main id="main">
+    <div id="view-dashboard" class="fade-in"></div>
+    <div id="view-session" class="fade-in" style="display:none"></div>
+    <div id="view-progress" class="fade-in" style="display:none"></div>
+    <div id="view-races" class="fade-in" style="display:none"></div>
+  </main>
+</div>
+
+<script>
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SESSIONS = [
+  {
+    index: 0, day: 'LUN', date: '15 jun', fullDate: 'Lunes, 15 jun 2026',
+    type: 'Z1', cat: 'zone',
+    description: 'Rodaje suave en llano. Primera salida — tobillo en observación total. Terreno liso.',
+    detail: 'FC objetivo: 60–68% FC máx. Percepción: muy fácil, conversación completamente fluida. Terreno completamente liso. Parar de inmediato ante cualquier molestia en tobillo.',
+    duration: '45 min', zone: 'Z1 · 60–68% FC', alert: true, blocks: null,
+  },
+  {
+    index: 1, day: 'MAR', date: '16 jun', fullDate: 'Martes, 16 jun 2026',
+    type: 'GYM', cat: 'gym',
+    description: 'Fuerza: Bloque A (Tobillo) + Bloque B (Core)',
+    detail: 'Fuerza preventiva y base. Ejecución controlada en todo momento, sin compensaciones posturales. Descanso 60–90s entre series.',
+    duration: '50 min', zone: null, alert: true,
+    blocks: [
+      { id: 'A', name: 'Bloque A — Tobillo', exercises: [
+        ['Elevación talón unipodal sin peso','3','15'],
+        ['Balance unipodal estático','3','30s'],
+        ['Monster walk con banda','3','15'],
+        ['Dorsiflexión con banda','3','15'],
+        ['Tibialis raise','3','15'],
+      ]},
+      { id: 'B', name: 'Bloque B — Core', exercises: [
+        ['Plancha frontal','3','45s'],
+        ['Plancha lateral con rotación','3','30s/lado'],
+        ['Pallof press con banda','3','12'],
+        ['Dead bug','3','8/lado'],
+        ['Hollow body hold','3','20s'],
+      ]},
+    ],
+  },
+  {
+    index: 2, day: 'MIÉ', date: '17 jun', fullDate: 'Miércoles, 17 jun 2026',
+    type: 'Z2', cat: 'zone',
+    description: 'Rodaje aeróbico base en llano. Ritmo cómodo, conversación fluida.',
+    detail: 'FC objetivo: 69–76% FC máx. Percepción: cómodo, pequeñas pausas en conversación. Terreno llano, ritmo constante durante toda la sesión.',
+    duration: '60 min', zone: 'Z2 · 69–76% FC', alert: false, blocks: null,
+  },
+  {
+    index: 3, day: 'JUE', date: '18 jun', fullDate: 'Jueves, 18 jun 2026',
+    type: 'REC', cat: 'rec',
+    description: 'Recuperación activa: Bloque E completo (movilidad)',
+    detail: 'Movilidad y recuperación activa. Sin carga cardiovascular. Ritmo de trabajo bajo, plena consciencia corporal. No forzar rangos de movimiento.',
+    duration: '25 min', zone: null, alert: false,
+    blocks: [
+      { id: 'E', name: 'Bloque E — Movilidad', exercises: [
+        ['Hip flexor stretch en arrodillado','3','45s/lado'],
+        ['Pigeon pose','3','60s/lado'],
+        ['Apertura de cadera tumbado','3','45s'],
+        ['Movilidad tobillo en pared','3','15/lado'],
+        ['Rotación torácica foam roller','3','60s'],
+      ]},
+    ],
+  },
+  {
+    index: 4, day: 'VIE', date: '19 jun', fullDate: 'Viernes, 19 jun 2026',
+    type: 'Z2', cat: 'zone',
+    description: 'Rodaje aeróbico base en llano.',
+    detail: 'FC objetivo: 69–76% FC máx. Mismo patrón que el miércoles. Terreno llano, ritmo constante.',
+    duration: '55 min', zone: 'Z2 · 69–76% FC', alert: false, blocks: null,
+  },
+  {
+    index: 5, day: 'SÁB', date: '20 jun', fullDate: 'Sábado, 20 jun 2026',
+    type: 'GYM', cat: 'gym',
+    description: 'Fuerza: Bloque C (Tren inferior) + Bloque D (Cadena posterior)',
+    detail: 'Sesión de fuerza de mayor intensidad. Técnica precisa en todos los movimientos. Descanso 90–120s entre series de carga.',
+    duration: '55 min', zone: null, alert: false,
+    blocks: [
+      { id: 'C', name: 'Bloque C — Tren Inferior', exercises: [
+        ['Sentadilla búlgara con mancuernas','3','10/lado'],
+        ['Step-up con carga','3','12/lado'],
+        ['Zancada caminando','3','12/lado'],
+        ['Sentadilla goblet','3','15'],
+        ['Hip thrust con barra','3','12'],
+      ]},
+      { id: 'D', name: 'Bloque D — Cadena Posterior', exercises: [
+        ['Peso muerto rumano con mancuernas','3','10'],
+        ['Good morning con barra','3','12'],
+        ['Curl de isquio en máquina','3','12'],
+        ['Superman hold','3','20s'],
+        ['Face pull con banda','3','15'],
+      ]},
+    ],
+  },
+  {
+    index: 6, day: 'DOM', date: '21 jun', fullDate: 'Domingo, 21 jun 2026',
+    type: 'TL', cat: 'tl',
+    description: 'Tirada larga Z1. Llano. Ritmo muy fácil todo el recorrido. Sin D+.',
+    detail: 'FC objetivo: 60–68% FC máx. Sesión más larga de la semana. Ritmo muy conservador durante todo el recorrido. Hidratación y nutrición desde el minuto 0. Terreno llano.',
+    duration: '75 min', zone: 'Z1 · 60–68% FC', alert: false, blocks: null,
+  },
+];
+
+const PHASES = [
+  { id: 'MF1', name: 'Recuperación y Base',   weeks: '1–12',  color: '#388BFD', r: 12/52, dates: '15 jun – 6 sep 2026',     active: true },
+  { id: 'MF2', name: 'Desarrollo Aeróbico',   weeks: '13–28', color: '#3FB950', r: 16/52, dates: '7 sep – 27 dic 2026',     active: false },
+  { id: 'MF3', name: 'Específico Ultra',       weeks: '29–44', color: '#F0883E', r: 16/52, dates: '28 dic 2026 – 18 abr 2027', active: false },
+  { id: 'MF4', name: 'Taper + Carrera',        weeks: '45–52', color: '#A371F7', r: 8/52,  dates: '19 abr – 15 jun 2027',   active: false },
+];
+
+const CPS = [
+  { id: 'CP1',  name: 'Fin MF1 — Base establecida',           date: '6 sep 2026',   color: '#388BFD' },
+  { id: 'CP2',  name: 'Fin MF2 — Aeróbico consolidado',       date: '27 dic 2026',  color: '#3FB950' },
+  { id: 'CP3',  name: 'Fin MF3 — Específico completado',      date: '18 abr 2027',  color: '#F0883E' },
+  { id: 'RACE', name: 'Ultra 80K · Sub 11h',                  date: '15 jun 2027',  color: '#A371F7' },
+];
+
+// Races and tests calendar
+const RACES = [
+  { id: 1, name: 'Rodaje largo con dorsal', date: '2026-07-12', mesociclo: 'M1.1', distance: 15, elevation: 600, timeMin: 105, timeMax: 115, ritmoMin: 7.0, ritmoMax: 7.67, type: 'long-run', objetivo: 'Rodaje largo con dorsal, no competición. Ritmo Z2 todo el recorrido.', criterio: 'Completar sin molestias en el tobillo a ritmo Z2.' },
+  { id: 2, name: 'Trail con dorsal', date: '2026-08-09', mesociclo: 'M1.2', distance: 20, elevation: 900, timeMin: 140, timeMax: 155, ritmoMin: 7.0, ritmoMax: 7.75, type: 'trail', objetivo: 'Primer trail con dorsal real. Testear gestión de esfuerzo en terreno.', criterio: 'Completar con sensaciones buenas. Ritmo Z2 subidas, Z1-Z2 llano.' },
+  { id: 3, name: 'CP1 — Carrera test', date: '2026-09-06', mesociclo: 'M1.3', distance: 25, elevation: 1200, timeMin: 170, timeMax: 185, ritmoMin: 6.8, ritmoMax: 7.4, type: 'test', checkpoint: 'CP1', objetivo: 'Primera carrera test real. Evaluar CP1. Gestión de ritmo en subida.', criterio: 'Tobillo sin molestias, completar cómodo, sensaciones de tener más.' },
+  { id: 4, name: 'Carrera test fondo', date: '2026-10-04', mesociclo: 'M2.1', distance: 28, elevation: 1400, timeMin: 190, timeMax: 210, ritmoMin: 6.78, ritmoMax: 7.5, type: 'test', objetivo: 'Carrera test de fondo. Aplicar el trabajo de fartlek de M2.1.', criterio: 'Primera mitad conservadora. Segunda mitad igual o más rápida.' },
+  { id: 5, name: 'Carrera A (competición real)', date: '2026-11-01', mesociclo: 'M2.2', distance: 20, elevation: 1000, timeMin: 130, timeMax: 145, ritmoMin: 6.5, ritmoMax: 7.25, type: 'race', objetivo: 'Esfuerzo competitivo real. Aplicar series de subida de M2.2.', criterio: 'Subidas a Z4 real, bajadas sueltas. Completar en el tiempo estimado.' },
+  { id: 6, name: 'Trail medio-largo', date: '2026-11-29', mesociclo: 'M2.3', distance: 32, elevation: 1600, timeMin: 215, timeMax: 235, ritmoMin: 6.72, ritmoMax: 7.34, type: 'trail', objetivo: 'Trail medio-largo. Primera distancia seria del plan.', criterio: 'Completar con gestión de nutrición correcta (comer desde km 5).' },
+  { id: 7, name: 'Carrera B (CP2)', date: '2026-12-27', mesociclo: 'M2.4', distance: 35, elevation: 1800, timeMin: 235, timeMax: 255, ritmoMin: 6.72, ritmoMax: 7.29, type: 'race', checkpoint: 'CP2', objetivo: 'Competición real. Gran test de M2.4. Evaluar CP2.', criterio: 'Ritmo de subida ≥15% mejor que inicio MF2.' },
+  { id: 8, name: 'Ultra corta', date: '2027-01-24', mesociclo: 'M3.1', distance: 40, elevation: 2000, timeMin: 285, timeMax: 310, ritmoMin: 7.13, ritmoMax: 7.75, type: 'ultra', objetivo: 'Ultra corta. Test de gestión de carrera larga. Nutrición en carrera.', criterio: 'Completar sin crisis de energía. Ritmo constante en las últimas 2h.' },
+  { id: 9, name: 'Carrera C (competición real)', date: '2027-02-21', mesociclo: 'M3.2', distance: 42, elevation: 2200, timeMin: 295, timeMax: 320, ritmoMin: 7.02, ritmoMax: 7.62, type: 'race', objetivo: 'Competición real. Aplicar ritmo objetivo aprendido en M3.2.', criterio: 'Km 30–42 a ritmo igual o más rápido que km 10–20.' },
+  { id: 10, name: 'CP3 — Media Ultra', date: '2027-04-18', mesociclo: 'M3.4', distance: 55, elevation: 2800, timeMin: 410, timeMax: 440, ritmoMin: 7.45, ritmoMax: 8.0, type: 'ultra', checkpoint: 'CP3', objetivo: 'Gran test pre-objetivo. Gestión completa de nutrición, material, mentalidad y ritmo.', criterio: 'Validar proyección a sub 11h en 80km. Ver tabla de evaluación CP3.' },
+  { id: 11, name: 'Ultra 80K · Sub 11h', date: '2027-06-15', mesociclo: 'RACE', distance: 80, elevation: 4000, timeMin: 660, timeMax: 660, ritmoMin: 8.25, ritmoMax: 8.25, type: 'race', checkpoint: 'RACE', objetivo: 'CARRERA OBJETIVO: Ultra 80K Sub 11h', criterio: 'Objetivo: completar en menos de 11h a ritmo <8:15 min/km' },
+];
+
+// Theoretical weekly plan for 52 weeks (Ultra 80K)
+const WEEKS_PLAN = [
+  // MF1: Base (weeks 1-12)
+  {week:1,  vol:22, elev:600},   {week:2,  vol:24, elev:800},   {week:3,  vol:26, elev:1000},  {week:4,  vol:20, elev:500},
+  {week:5,  vol:28, elev:1200},  {week:6,  vol:30, elev:1400},  {week:7,  vol:32, elev:1600},  {week:8,  vol:24, elev:800},
+  {week:9,  vol:34, elev:1800},  {week:10, vol:36, elev:2000},  {week:11, vol:38, elev:2200},  {week:12, vol:28, elev:1000},
+  // MF2: Desarrollo (weeks 13-28)
+  {week:13, vol:40, elev:2400},  {week:14, vol:42, elev:2600},  {week:15, vol:44, elev:2800},  {week:16, vol:32, elev:1400},
+  {week:17, vol:46, elev:3000},  {week:18, vol:48, elev:3200},  {week:19, vol:50, elev:3400},  {week:20, vol:36, elev:1600},
+  {week:21, vol:52, elev:3600},  {week:22, vol:54, elev:3800},  {week:23, vol:56, elev:4000},  {week:24, vol:40, elev:1800},
+  {week:25, vol:58, elev:4200},  {week:26, vol:60, elev:4400},  {week:27, vol:62, elev:4500},  {week:28, vol:44, elev:2000},
+  // MF3: Específico (weeks 29-44)
+  {week:29, vol:64, elev:4200},  {week:30, vol:66, elev:4400},  {week:31, vol:68, elev:4600},  {week:32, vol:48, elev:2200},
+  {week:33, vol:70, elev:4800},  {week:34, vol:72, elev:5000},  {week:35, vol:74, elev:5200},  {week:36, vol:52, elev:2400},
+  {week:37, vol:76, elev:5400},  {week:38, vol:78, elev:5600},  {week:39, vol:80, elev:5800},  {week:40, vol:56, elev:2600},
+  {week:41, vol:82, elev:6000},  {week:42, vol:84, elev:6200},  {week:43, vol:86, elev:6400},  {week:44, vol:60, elev:2800},
+  // MF4: Taper + Carrera (weeks 45-52)
+  {week:45, vol:48, elev:2000},  {week:46, vol:42, elev:1600},  {week:47, vol:36, elev:1200},  {week:48, vol:30, elev:800},
+  {week:49, vol:24, elev:600},   {week:50, vol:18, elev:400},   {week:51, vol:12, elev:200},   {week:52, vol:0,  elev:0},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  view: 'dashboard',
+  selectedDay: null,
+  completedDays: JSON.parse(localStorage.getItem('trailapp_completed') || '{}'),
+  workoutData: JSON.parse(localStorage.getItem('trailapp_workouts') || '{}'),
+  showingForm: false,
+  progressData: JSON.parse(localStorage.getItem('progreso_ultra_2026') || '{}'),
+  extraActivities: JSON.parse(localStorage.getItem('trailapp_extras') || '[]'),
+  showingExtraForm: false,
+  raceData: JSON.parse(localStorage.getItem('trailapp_races') || '{}'),
+  selectedRace: null,
+  showingRaceForm: false,
+};
+
+function saveState() {
+  localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
+}
+
+function saveProgressData() {
+  localStorage.setItem('progreso_ultra_2026', JSON.stringify(state.progressData));
+}
+
+function saveExtraActivities() {
+  localStorage.setItem('trailapp_extras', JSON.stringify(state.extraActivities));
+}
+
+function saveRaceData() {
+  localStorage.setItem('trailapp_races', JSON.stringify(state.raceData));
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function badgeClass(cat) {
+  return 'badge badge-' + cat;
+}
+
+function daysUntil(dateStr) {
+  const today = new Date('2026-06-15');
+  const target = new Date(dateStr);
+  return Math.ceil((target - today) / 86400000);
+}
+
+function completedCount() {
+  return Object.values(state.completedDays).filter(Boolean).length;
+}
+
+// Progress data utilities
+function getProgressWeek(week) {
+  return state.progressData[String(week)] || {};
+}
+
+function setProgressWeek(week, data) {
+  state.progressData[String(week)] = data;
+  saveProgressData();
+}
+
+function calcDeviation(real, theo) {
+  if (!theo || theo === 0) return 0;
+  return Math.round(((real - theo) / theo) * 1000) / 10;
+}
+
+function getDeviationColor(deviation) {
+  if (Math.abs(deviation) <= 10) return 'success';
+  if (Math.abs(deviation) <= 20) return 'warning';
+  return 'error';
+}
+
+function exportToCSV() {
+  const headers = ['Semana', 'Vol_Real_km', 'Vol_Teorico_km', 'Vol_Desv_%', 'D+_Real_m', 'D+_Teorico_m', 'D+_Desv_%', 'Ritmo_TL_min_km', 'Duracion_TL_h', 'Estado', 'Notas'];
+  const rows = [];
+  WEEKS_PLAN.forEach(w => {
+    const data = state.progressData[String(w.week)] || {};
+    const volDev = calcDeviation(data.volReal || 0, w.vol);
+    const elevDev = calcDeviation(data.elevReal || 0, w.elev);
+    rows.push([
+      w.week,
+      data.volReal || '',
+      w.vol,
+      volDev,
+      data.elevReal || '',
+      w.elev,
+      elevDev,
+      data.ritmo || '',
+      data.duracion || '',
+      data.status || '',
+      data.notes || ''
+    ]);
+  });
+  const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `progreso_ultra_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function clearProgressData() {
+  if (confirm('¿Limpiar todos los datos de progreso? Esta acción no se puede deshacer.')) {
+    state.progressData = {};
+    saveProgressData();
+    location.reload();
+  }
+}
+
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    e.append(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
+  }
+  return e;
+}
+
+// ─── EXTRA ACTIVITIES MODAL ──────────────────────────────────────────────────
+function renderExtraActivityModal() {
+  const modal = el('div', { style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999' });
+  const card = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:24px;max-width:600px;max-height:90vh;overflow-y:auto;width:90%' });
+
+  card.appendChild(el('h2', { style: 'font-size:18px;font-weight:700;color:#E6EDF3;margin-bottom:20px' }, '➕ Agregar Actividad Extra'));
+
+  const form = el('div', {});
+
+  // Date
+  const dateInput = el('input', { type: 'date', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Fecha'),
+    dateInput
+  ));
+
+  // Type
+  const typeSelect = el('select', { style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' },
+    el('option', { value: 'zone' }, '🏃 Zona / Rodaje'),
+    el('option', { value: 'tl' }, '🏔️ Tirada Larga'),
+    el('option', { value: 'gym' }, '💪 Gym / Fuerza'),
+    el('option', { value: 'rec' }, '🧘 Recuperación'),
+    el('option', { value: 'other' }, '⚡ Otra actividad')
+  );
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Tipo de Actividad'),
+    typeSelect
+  ));
+
+  // Activity name
+  const nameInput = el('input', { type: 'text', placeholder: 'ej: Trail en La Pera, Piscina, Ciclismo', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Nombre de la Actividad'),
+    nameInput
+  ));
+
+  // Description
+  const descInput = el('textarea', { placeholder: 'Detalles de la actividad', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;min-height:60px;resize:vertical' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Descripción'),
+    descInput
+  ));
+
+  // Metrics (dynamic by type)
+  const metricsDiv = el('div', { style: 'margin-bottom:16px;padding:12px;background:rgba(56,139,253,0.05);border:1px solid rgba(56,139,253,0.2);border-radius:4px' });
+  form.appendChild(metricsDiv);
+
+  // Duration
+  const durationInput = el('input', { type: 'number', placeholder: 'ej: 60', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Duración (minutos)'),
+    durationInput
+  ));
+
+  // Sensaciones
+  const sensacionesInput = el('input', { type: 'number', min: '1', max: '5', placeholder: 'ej: 4', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Sensaciones (1-5)'),
+    sensacionesInput
+  ));
+
+  card.appendChild(form);
+
+  // Update metrics based on type
+  const updateMetrics = () => {
+    const type = typeSelect.value;
+    metricsDiv.innerHTML = '';
+    if (type === 'zone' || type === 'tl') {
+      const distanceInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 12.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+      const elevationInput = el('input', { type: 'number', placeholder: 'ej: 300', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+      metricsDiv.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
+        distanceInput
+      ));
+      metricsDiv.appendChild(el('div', {},
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Desnivel (m)'),
+        elevationInput
+      ));
+    }
+  };
+
+  typeSelect.addEventListener('change', updateMetrics);
+  updateMetrics();
+
+  // Buttons
+  const btnGroup = el('div', { style: 'display:flex;gap:8px;margin-top:20px' });
+  const saveBtn = el('button', { type: 'button', class: 'complete-btn undone', style: 'flex:1' });
+  saveBtn.textContent = '✓ Guardar Actividad';
+  saveBtn.addEventListener('click', () => {
+    const date = dateInput.value;
+    const type = typeSelect.value;
+    const name = nameInput.value;
+    const desc = descInput.value;
+    const duration = parseInt(durationInput.value) || 0;
+    const sensaciones = parseInt(sensacionesInput.value) || 0;
+
+    if (!date || !name) {
+      alert('Por favor completa fecha y nombre de la actividad');
+      return;
+    }
+
+    const activity = {
+      id: Date.now(),
+      date,
+      type,
+      name,
+      desc,
+      duration,
+      sensaciones,
+      completed: true,
+      data: {}
+    };
+
+    if (type === 'zone' || type === 'tl') {
+      const distInput = metricsDiv.querySelector('input[placeholder*="12.5"]');
+      const elevInput = metricsDiv.querySelector('input[placeholder*="300"]');
+      activity.data.distance = parseFloat(distInput?.value) || 0;
+      activity.data.elevation = parseInt(elevInput?.value) || 0;
+    }
+
+    state.extraActivities.push(activity);
+    saveExtraActivities();
+    state.showingExtraForm = false;
+    modal.remove();
+    paintDashboard();
+  });
+
+  const cancelBtn = el('button', { type: 'button', class: 'complete-btn done-state', style: 'flex:1' });
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => {
+    state.showingExtraForm = false;
+    modal.remove();
+  });
+
+  btnGroup.appendChild(saveBtn);
+  btnGroup.appendChild(cancelBtn);
+  card.appendChild(btnGroup);
+  modal.appendChild(card);
+
+  return modal;
+}
+
+// ─── VIEWS ───────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const wrap = document.createElement('div');
+
+  // Header row
+  const hdr = el('div', { class: 'header-row' },
+    el('div', {},
+      el('div', { class: 'page-eyebrow' }, 'MF1 · SEMANA 01 · MICROCICLO A'),
+      el('h1', { class: 'page-title' }, 'Dashboard Semanal'),
+      el('div', { class: 'page-sub' }, 'Recuperación y Base · 15–21 junio 2026')
+    ),
+    el('div', { class: 'session-count-card' },
+      el('div', { class: 'session-count-label' }, 'Sesiones completadas'),
+      el('div', { class: 'session-count-val' }, completedCount() + '/7')
+    )
+  );
+  wrap.appendChild(hdr);
+
+  // Mountain divider
+  const mtn = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mtn.setAttribute('viewBox', '0 0 900 18'); mtn.setAttribute('width', '100%');
+  mtn.setAttribute('height', '18'); mtn.setAttribute('preserveAspectRatio', 'none');
+  mtn.style.cssText = 'display:block;margin:0 0 16px';
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M0,18 L40,14 L80,8 L120,13 L165,3 L210,11 L255,7 L300,13 L345,2 L395,10 L440,15 L490,5 L540,12 L595,1 L645,9 L700,14 L750,6 L800,12 L850,4 L900,18');
+  path.setAttribute('stroke', '#3FB950'); path.setAttribute('stroke-width', '1');
+  path.setAttribute('fill', 'none'); path.setAttribute('stroke-opacity', '0.22');
+  mtn.appendChild(path);
+  wrap.appendChild(mtn);
+
+  // Add extra activity button
+  const addBtn = el('button', { style: 'margin-bottom:20px;padding:12px 16px;background:#3FB950;border:none;border-radius:6px;color:#0D1117;font-weight:600;font-size:13px;cursor:pointer;transition:background 0.2s' });
+  addBtn.textContent = '➕ Agregar Actividad Extra';
+  addBtn.addEventListener('mouseover', () => addBtn.style.background = '#52cb63');
+  addBtn.addEventListener('mouseout', () => addBtn.style.background = '#3FB950');
+  addBtn.addEventListener('click', () => {
+    state.showingExtraForm = true;
+    const modal = renderExtraActivityModal();
+    document.body.appendChild(modal);
+  });
+  wrap.appendChild(addBtn);
+
+  // Plan bar
+  const pb = el('div', { class: 'plan-bar' },
+    el('div', { class: 'plan-bar-top' },
+      el('span', { class: 'plan-bar-label' }, 'Plan 52 semanas'),
+      el('span', { class: 'plan-bar-sem' }, 'SEM 01 / 52')
+    ),
+    el('div', { class: 'plan-bar-track' }, el('div', { class: 'plan-bar-fill' })),
+    el('div', { class: 'plan-bar-meta' },
+      el('span', {}, el('span', { style: 'color:#388BFD' }, '●') , ' MF1 activa'),
+      el('span', {}, 'CP1: 6 sep 2026'),
+      el('span', {}, 'CP2: 27 dic 2026'),
+      el('span', {}, 'CP3: 18 abr 2027'),
+      el('span', {}, 'RACE: 15 jun 2027')
+    )
+  );
+  wrap.appendChild(pb);
+
+  // Planned sessions
+  const scroll = el('div', { class: 'week-scroll' });
+  const grid = el('div', { class: 'week-grid' });
+  SESSIONS.forEach(s => {
+    const done = !!state.completedDays[s.index];
+    const data = state.workoutData[s.index];
+    const today = new Date('2026-06-15');
+    const sessionDate = new Date(s.fullDate.split(', ')[1]);
+    const isPast = today > sessionDate;
+    const isToday = s.index === 0;
+
+    let cardClass = 'session-card';
+    let cardStyle = '';
+
+    if (isToday && !done) {
+      // Present day: current color
+      cardClass += ' today';
+    } else if (done && data) {
+      // Completed with data
+      if (data.sensaciones >= 4) {
+        // Satisfied: light green
+        cardStyle = 'background:rgba(63,185,80,0.15);border-color:rgba(63,185,80,0.4);';
+      } else {
+        // Below expectations: light yellow
+        cardStyle = 'background:rgba(240,193,62,0.15);border-color:rgba(240,193,62,0.4);';
+      }
+    } else if (!done && isPast) {
+      // Not completed after date: light red
+      cardStyle = 'background:rgba(240,88,88,0.15);border-color:rgba(240,88,88,0.4);';
+    }
+
+    const card = el('div', { class: cardClass, style: cardStyle });
+    card.addEventListener('click', () => openSession(s.index));
+
+    const top = el('div', { class: 'card-top' },
+      el('div', { class: 'card-day' }, s.day)
+    );
+    if (done) {
+      const chk = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      chk.setAttribute('width', '14'); chk.setAttribute('height', '14'); chk.setAttribute('viewBox', '0 0 14 14');
+      chk.innerHTML = '<circle cx="7" cy="7" r="6" fill="rgba(63,185,80,0.18)"/><path d="M4.5 7L6.5 9L9.5 4.5" stroke="#3FB950" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      top.appendChild(chk);
+    } else {
+      // Show red cross only if date has passed
+      const today = new Date('2026-06-15');
+      const sessionDate = new Date(s.fullDate.split(', ')[1]); // Extract date from "Lunes, 15 jun 2026"
+      if (today > sessionDate) {
+        const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        cross.setAttribute('width', '14'); cross.setAttribute('height', '14'); cross.setAttribute('viewBox', '0 0 14 14');
+        cross.innerHTML = '<circle cx="7" cy="7" r="6" fill="rgba(240,88,88,0.18)"/><path d="M4.5 4.5L9.5 9.5M9.5 4.5L4.5 9.5" stroke="#f05858" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        top.appendChild(cross);
+      }
+    }
+    card.appendChild(top);
+    card.appendChild(el('div', { class: 'card-date' }, s.date));
+    card.appendChild(el('span', { class: badgeClass(s.cat) }, s.type));
+    card.appendChild(el('div', { class: 'card-desc' }, s.description));
+    const bot = el('div', { class: 'card-bottom' }, el('span', { class: 'card-dur' }, s.duration));
+    if (s.alert) bot.appendChild(el('span', { class: 'alert-chip' }, 'tobillo'));
+    card.appendChild(bot);
+    grid.appendChild(card);
+  });
+  scroll.appendChild(grid);
+  wrap.appendChild(scroll);
+
+  // Results week
+  const resultsSection = el('div', {});
+  resultsSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Resultados Reales'));
+  const resultsScroll = el('div', { class: 'week-scroll' });
+  const resultsGrid = el('div', { class: 'week-grid' });
+  SESSIONS.forEach(s => {
+    const done = !!state.completedDays[s.index];
+    const data = state.workoutData[s.index];
+    const card = el('div', { class: 'session-card' + (done ? ' done' : ''), style: done ? '' : 'opacity:0.5' });
+
+    const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day' }, s.day));
+    card.appendChild(top);
+    card.appendChild(el('div', { class: 'card-date' }, s.date));
+
+    if (done && data) {
+      const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
+      if (data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, data.distance + ' km'));
+      if (data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
+      if (data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, data.elevation + ' m'));
+      if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
+      if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
+      card.appendChild(metricsDiv);
+    } else {
+      card.appendChild(el('div', { style: 'flex:1;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:12px' }, '—'));
+    }
+
+    resultsGrid.appendChild(card);
+  });
+
+  // Add extra activities to results
+  state.extraActivities.forEach(act => {
+    const card = el('div', { class: 'session-card done', style: 'opacity:0.9' });
+    const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day', style: 'font-size:9px' }, '⭐ EXTRA'));
+    card.appendChild(top);
+    card.appendChild(el('div', { class: 'card-date' }, new Date(act.date).toLocaleDateString('es-ES', {month:'short', day:'numeric'})));
+    card.appendChild(el('span', { class: 'badge badge-quality' }, act.type.toUpperCase()));
+    card.appendChild(el('div', { class: 'card-desc' }, act.name));
+    const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
+    if (act.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, act.data.distance + ' km'));
+    if (act.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, act.duration + ' min'));
+    if (act.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, act.data.elevation + ' m'));
+    if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
+    card.appendChild(metricsDiv);
+    resultsGrid.appendChild(card);
+  });
+
+  resultsScroll.appendChild(resultsGrid);
+  resultsSection.appendChild(resultsScroll);
+  wrap.appendChild(resultsSection);
+
+  // Stats
+  const stats = el('div', { class: 'stat-grid' },
+    makeStatCard('Volumen sem.', '~28 km', '5h 25min estimado', '#E6EDF3'),
+    makeStatCard('D+ acumulado', '0 m', 'llano esta semana', '#E6EDF3'),
+    makeStatCard('Zona dominante', 'Z1 / Z2', 'base aeróbica', '#388BFD')
+  );
+  wrap.appendChild(stats);
+
+  return wrap;
+}
+
+function makeStatCard(label, val, sub, color) {
+  return el('div', { class: 'stat-card' },
+    el('div', { class: 'stat-label' }, label),
+    el('div', { class: 'stat-val', style: 'color:' + color }, val),
+    el('div', { class: 'stat-sub' }, sub)
+  );
+}
+
+function renderSession(idx) {
+  const s = SESSIONS[idx];
+  const done = !!state.completedDays[s.index];
+  const wrap = el('div', { class: 'detail-wrap' });
+
+  // Back
+  const back = el('button', { class: 'back-btn' });
+  const bsv = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  bsv.setAttribute('width','16'); bsv.setAttribute('height','16'); bsv.setAttribute('viewBox','0 0 16 16');
+  bsv.innerHTML = '<path d="M10 3L5 8L10 13" stroke="#8B949E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  back.appendChild(bsv); back.append('Volver al dashboard');
+  back.addEventListener('click', () => setView('dashboard'));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el('div', { class: 'detail-date' }, s.fullDate));
+  const meta = el('div', { class: 'detail-meta' },
+    el('span', { class: badgeClass(s.cat) }, s.type),
+    el('span', { style: 'font-family:monospace;font-size:12px;color:#8B949E' }, s.duration)
+  );
+  if (s.alert) meta.appendChild(el('span', { style: 'font-size:11px;color:#F0883E;background:rgba(240,136,62,0.1);border:1px solid rgba(240,136,62,0.2);border-radius:4px;padding:2px 8px;font-family:monospace' }, '⚠ tobillo'));
+  wrap.appendChild(meta);
+  wrap.appendChild(el('h1', { class: 'detail-title' }, s.description));
+
+  // Info card
+  const info = el('div', { class: 'info-card' });
+  if (s.zone) {
+    info.appendChild(el('div', { class: 'info-label' }, 'Zona objetivo'));
+    info.appendChild(el('div', { class: 'info-zone' }, s.zone));
+  } else {
+    info.appendChild(el('div', { class: 'info-label' }, 'Protocolo'));
+  }
+  info.appendChild(el('div', { class: 'info-desc' }, s.detail));
+  wrap.appendChild(info);
+
+  // Blocks
+  if (s.blocks) {
+    const bl = el('div', { class: 'block-list' });
+    s.blocks.forEach(b => {
+      const bc = el('div', { class: 'block-card' });
+      bc.appendChild(el('div', { class: 'block-header' },
+        el('div', { class: 'block-id' }, b.id),
+        el('div', { class: 'block-name' }, b.name)
+      ));
+      const tbl = el('div', { class: 'ex-table' },
+        el('div', { class: 'ex-th' }, 'Ejercicio'),
+        el('div', { class: 'ex-th', style: 'text-align:right' }, 'Ser.'),
+        el('div', { class: 'ex-th', style: 'text-align:right' }, 'Reps')
+      );
+      b.exercises.forEach(([name, sets, reps]) => {
+        tbl.appendChild(el('div', { class: 'ex-cell' }, name));
+        tbl.appendChild(el('div', { class: 'ex-sets' }, sets));
+        tbl.appendChild(el('div', { class: 'ex-reps' }, reps));
+      });
+      bc.appendChild(tbl);
+      bl.appendChild(bc);
+    });
+    wrap.appendChild(bl);
+  }
+
+  // Complete button or Form
+  if (state.showingForm && state.selectedDay === idx && !done) {
+    // Show form for completing workout (dynamic by type)
+    const form = el('form', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:20px;margin-bottom:12px' });
+    const formTitle = el('h3', { style: 'font-size:14px;font-weight:600;margin-bottom:16px;color:#E6EDF3' }, '✓ Registrar Entreno Realizado');
+    form.appendChild(formTitle);
+
+    // Zone/TL workouts
+    if (s.cat === 'zone' || s.cat === 'tl') {
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
+        el('input', { type: 'number', step: '0.1', placeholder: 'ej: 10.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' })
+      ));
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Duración (minutos)'),
+        el('input', { type: 'number', placeholder: 'ej: 60', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' })
+      ));
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Desnivel positivo (m)'),
+        el('input', { type: 'number', placeholder: 'ej: 500', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' })
+      ));
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'FC Media (bpm)'),
+        el('input', { type: 'number', placeholder: 'ej: 150', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' })
+      ));
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Sensaciones (1-5)'),
+        el('input', { type: 'number', min: '1', max: '5', placeholder: 'ej: 4', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' })
+      ));
+    }
+
+    // Gym/Recovery workouts with exercises
+    if (s.cat === 'gym' || s.cat === 'rec') {
+      if (s.blocks) {
+        s.blocks.forEach(b => {
+          form.appendChild(el('div', { style: 'margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #21262D' },
+            el('div', { style: 'font-size:12px;font-weight:600;color:#E6EDF3;margin-bottom:12px' }, b.name),
+            el('div', { style: 'display:flex;flex-direction:column;gap:8px' }, ...b.exercises.map(([name, sets, reps], i) =>
+              el('div', { style: 'display:flex;align-items:center;gap:8px;font-size:11px' },
+                el('div', { style: 'flex:1;color:#8B949E' }, name),
+                el('input', { type: 'number', min: '0', placeholder: 'Ser', value: sets, style: 'width:40px;padding:4px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;text-align:center;font-size:11px' }),
+                el('span', { style: 'color:#8B949E;font-size:10px' }, '×'),
+                el('input', { type: 'text', placeholder: 'Reps', value: reps, style: 'flex:0 0 70px;padding:4px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' })
+              )
+            ))
+          ));
+        });
+      }
+    }
+
+    // Notes (all types)
+    form.appendChild(el('div', { style: 'margin-bottom:16px' },
+      el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Notas'),
+      el('textarea', { placeholder: 'Observaciones, cómo te sentiste, etc.', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace;min-height:60px;resize:vertical' })
+    ));
+
+    // Buttons
+    const btnGroup = el('div', { style: 'display:flex;gap:8px' });
+    const saveBtn = el('button', { type: 'button', class: 'complete-btn undone', style: 'flex:1' });
+    saveBtn.textContent = '✓ Guardar y completar';
+    saveBtn.addEventListener('click', () => {
+      const formInputs = form.querySelectorAll('input, textarea');
+      const data = {};
+
+      if (s.cat === 'zone' || s.cat === 'tl') {
+        data.distance = parseFloat(formInputs[0].value) || 0;
+        data.duration = parseInt(formInputs[1].value) || 0;
+        data.elevation = parseInt(formInputs[2].value) || 0;
+        data.hr = parseInt(formInputs[3].value) || 0;
+        data.sensaciones = parseInt(formInputs[4].value) || 0;
+        data.notes = formInputs[5].value;
+      } else if (s.cat === 'gym' || s.cat === 'rec') {
+        const exercises = [];
+        let noteIdx = 0;
+        if (s.blocks) {
+          s.blocks.forEach(b => {
+            b.exercises.forEach(([name, sets, reps], i) => {
+              exercises.push({
+                name,
+                setsCompleted: parseInt(formInputs[noteIdx]?.value) || 0,
+                repsCompleted: formInputs[noteIdx + 1]?.value || ''
+              });
+              noteIdx += 2;
+            });
+          });
+        }
+        data.exercises = exercises;
+        data.notes = formInputs[noteIdx]?.value || '';
+      }
+
+      state.workoutData[idx] = data;
+      localStorage.setItem('trailapp_workouts', JSON.stringify(state.workoutData));
+      state.completedDays[s.index] = true;
+      saveState();
+      state.showingForm = false;
+      if (document.getElementById('view-progress').style.display !== 'none') {
+        updateProgressCharts();
+      }
+      openSession(idx);
+    });
+
+    const cancelBtn = el('button', { type: 'button', class: 'complete-btn done-state', style: 'flex:1' });
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.addEventListener('click', () => {
+      state.showingForm = false;
+      openSession(idx);
+    });
+
+    btnGroup.appendChild(saveBtn);
+    btnGroup.appendChild(cancelBtn);
+    form.appendChild(btnGroup);
+    wrap.appendChild(form);
+  } else {
+    // Regular complete button
+    const btn = el('button', { class: 'complete-btn ' + (done ? 'done-state' : 'undone') });
+    btn.textContent = done ? '✓ Sesión completada — clic para desmarcar' : 'Marcar como completada';
+    btn.addEventListener('click', () => {
+      if (!done) {
+        state.showingForm = true;
+        openSession(idx);
+      } else {
+        state.completedDays[s.index] = false;
+        saveState();
+        state.showingForm = false;
+        openSession(idx);
+      }
+    });
+    wrap.appendChild(btn);
+
+    // Show workout results if completed
+    if (done && state.workoutData[idx]) {
+      const data = state.workoutData[idx];
+      const resultsCard = el('div', { class: 'info-card', style: 'margin-top:16px' });
+      resultsCard.appendChild(el('div', { class: 'info-label' }, 'Resultados Reales'));
+
+      // Zone/TL results
+      if (s.cat === 'zone' || s.cat === 'tl') {
+        const resultsGrid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px' });
+        if (data.distance) resultsGrid.appendChild(el('div', {},
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:3px' }, 'Distancia'),
+          el('div', { style: 'font-family:monospace;font-size:16px;font-weight:600;color:#3FB950' }, data.distance + ' km')
+        ));
+        if (data.duration) resultsGrid.appendChild(el('div', {},
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:3px' }, 'Duración'),
+          el('div', { style: 'font-family:monospace;font-size:16px;font-weight:600;color:#388BFD' }, data.duration + ' min')
+        ));
+        if (data.elevation) resultsGrid.appendChild(el('div', {},
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:3px' }, 'Desnivel+'),
+          el('div', { style: 'font-family:monospace;font-size:16px;font-weight:600;color:#F0883E' }, data.elevation + ' m')
+        ));
+        if (data.hr) resultsGrid.appendChild(el('div', {},
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:3px' }, 'FC Media'),
+          el('div', { style: 'font-family:monospace;font-size:16px;font-weight:600;color:#A371F7' }, data.hr + ' bpm')
+        ));
+        if (data.sensaciones) resultsGrid.appendChild(el('div', {},
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:3px' }, 'Sensaciones'),
+          el('div', { style: 'font-family:monospace;font-size:16px;font-weight:600;color:#E6EDF3' }, data.sensaciones + ' / 5')
+        ));
+        resultsCard.appendChild(resultsGrid);
+      }
+
+      // Gym/Rec results
+      if ((s.cat === 'gym' || s.cat === 'rec') && data.exercises) {
+        data.exercises.forEach(ex => {
+          resultsCard.appendChild(el('div', { style: 'padding:8px;background:rgba(163,113,247,0.05);border:1px solid rgba(163,113,247,0.15);border-radius:4px;margin-bottom:8px;font-size:11px' },
+            el('div', { style: 'color:#E6EDF3;font-weight:500;margin-bottom:4px' }, ex.name),
+            el('div', { style: 'color:#A371F7;font-family:monospace' }, ex.setsCompleted + ' × ' + ex.repsCompleted)
+          ));
+        });
+      }
+
+      if (data.notes) {
+        resultsCard.appendChild(el('div', { style: 'padding-top:12px;border-top:1px solid #21262D' },
+          el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:6px' }, 'Notas'),
+          el('div', { style: 'font-size:12px;color:#C9D1D9;line-height:1.5' }, data.notes)
+        ));
+      }
+
+      wrap.appendChild(resultsCard);
+    }
+  }
+
+  return wrap;
+}
+
+function renderProgressTable() {
+  const tableWrap = el('div', { class: 'progress-table-wrap' });
+  const table = el('table', { class: 'progress-table' });
+
+  // Header
+  const thead = el('thead', {},
+    el('tr', {},
+      el('th', {}, 'Sem'),
+      el('th', {}, 'Vol Real (km)'),
+      el('th', {}, 'Vol Teó (km)'),
+      el('th', {}, 'Vol Δ%'),
+      el('th', {}, 'D+ Real (m)'),
+      el('th', {}, 'D+ Teó (m)'),
+      el('th', {}, 'D+ Δ%'),
+      el('th', {}, 'Ritmo TL (min/km)'),
+      el('th', {}, 'Duración TL (h)'),
+      el('th', {}, 'Estado'),
+      el('th', {}, 'Notas')
+    )
+  );
+  table.appendChild(thead);
+
+  // Data rows
+  WEEKS_PLAN.forEach(w => {
+    const data = state.progressData[String(w.week)] || {};
+    const volReal = parseFloat(data.volReal) || '';
+    const elevReal = parseFloat(data.elevReal) || '';
+    const volDev = volReal ? calcDeviation(volReal, w.vol) : '';
+    const elevDev = elevReal ? calcDeviation(elevReal, w.elev) : '';
+
+    const tr = el('tr', {});
+    tr.appendChild(el('td', {}, String(w.week)));
+
+    const volRealInput = el('input', { type: 'number', step: '0.1', value: volReal || '', placeholder: '—' });
+    volRealInput.addEventListener('change', () => {
+      const v = parseFloat(volRealInput.value);
+      if (v < 0) { volRealInput.classList.add('error'); return; }
+      volRealInput.classList.remove('error');
+      setProgressWeek(w.week, { ...data, volReal: v });
+      updateProgressCharts();
+    });
+    tr.appendChild(el('td', {}, volRealInput));
+
+    tr.appendChild(el('td', { class: 'computed' }, String(w.vol)));
+
+    const volDevCell = el('td', { class: 'computed' + (volDev ? ' ' + getDeviationColor(volDev) : '') });
+    volDevCell.textContent = volDev ? volDev + '%' : '—';
+    tr.appendChild(volDevCell);
+
+    const elevRealInput = el('input', { type: 'number', step: '10', value: elevReal || '', placeholder: '—' });
+    elevRealInput.addEventListener('change', () => {
+      const v = parseInt(elevRealInput.value);
+      if (v < 0) { elevRealInput.classList.add('error'); return; }
+      elevRealInput.classList.remove('error');
+      setProgressWeek(w.week, { ...data, elevReal: v });
+      updateProgressCharts();
+    });
+    tr.appendChild(el('td', {}, elevRealInput));
+
+    tr.appendChild(el('td', { class: 'computed' }, String(w.elev)));
+
+    const elevDevCell = el('td', { class: 'computed' + (elevDev ? ' ' + getDeviationColor(elevDev) : '') });
+    elevDevCell.textContent = elevDev ? elevDev + '%' : '—';
+    tr.appendChild(elevDevCell);
+
+    const ritmoInput = el('input', { type: 'number', step: '0.1', min: '5', max: '10', value: data.ritmo || '', placeholder: '—' });
+    ritmoInput.addEventListener('change', () => {
+      const v = parseFloat(ritmoInput.value);
+      if (v < 0) { ritmoInput.classList.add('error'); return; }
+      ritmoInput.classList.remove('error');
+      setProgressWeek(w.week, { ...data, ritmo: v });
+      updateProgressCharts();
+    });
+    tr.appendChild(el('td', {}, ritmoInput));
+
+    const duracionInput = el('input', { type: 'number', step: '0.5', min: '0', max: '12', value: data.duracion || '', placeholder: '—' });
+    duracionInput.addEventListener('change', () => {
+      const v = parseFloat(duracionInput.value);
+      if (v < 0) { duracionInput.classList.add('error'); return; }
+      duracionInput.classList.remove('error');
+      setProgressWeek(w.week, { ...data, duracion: v });
+      updateProgressCharts();
+    });
+    tr.appendChild(el('td', {}, duracionInput));
+
+    const statusSelect = el('select', {});
+    statusSelect.innerHTML = '<option value="">—</option><option value="OK">OK</option><option value="Fatiga">Fatiga</option><option value="Lesión">Lesión</option>';
+    statusSelect.value = data.status || '';
+    statusSelect.addEventListener('change', () => {
+      setProgressWeek(w.week, { ...data, status: statusSelect.value });
+    });
+    tr.appendChild(el('td', {}, statusSelect));
+
+    const notesInput = el('input', { type: 'text', value: data.notes || '', placeholder: '—' });
+    notesInput.addEventListener('change', () => {
+      setProgressWeek(w.week, { ...data, notes: notesInput.value });
+    });
+    tr.appendChild(el('td', {}, notesInput));
+
+    table.appendChild(tr);
+  });
+
+  tableWrap.appendChild(table);
+  return tableWrap;
+}
+
+function renderProgress() {
+  const done = completedCount();
+  const wrap = document.createElement('div');
+
+  wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
+    el('div', { class: 'page-eyebrow' }, 'MF1 · PROGRESO'),
+    el('h1', { class: 'page-title' }, 'Progreso'),
+    el('div', { class: 'page-sub' }, 'Semana 1 de 52 · Plan Ultra 80K')
+  ));
+
+  // Stats
+  const statItems = [
+    { l: 'Sesiones OK', v: done + ' / 7', s: 'esta semana', c: '#3FB950' },
+    { l: 'Volumen sem.', v: '~28 km', s: 'estimado', c: '#388BFD' },
+    { l: 'D+ acumulado', v: '0 m', s: 'llano', c: '#388BFD' },
+    { l: 'Semanas', v: '1 / 52', s: '1.9% del plan', c: '#8B949E' },
+  ];
+  const sg = el('div', { class: 'prog-grid4' });
+  statItems.forEach(x => sg.appendChild(makeStatCard(x.l, x.v, x.s, x.c)));
+  wrap.appendChild(sg);
+
+  // Calendar + checkpoints
+  const g2 = el('div', { class: 'prog-grid2' });
+
+  // Calendar
+  const cal = el('div', { class: 'cal-wrap' },
+    el('div', { class: 'cal-header' }, 'JUNIO 2026')
+  );
+  const dow = el('div', { class: 'cal-dow' });
+  ['L','M','X','J','V','S','D'].forEach(d => dow.appendChild(el('div', { class: 'cal-dow-cell' }, d)));
+  cal.appendChild(dow);
+  const days = el('div', { class: 'cal-days' });
+  for (let d = 1; d <= 30; d++) {
+    const inWeek = d >= 15 && d <= 21;
+    const dayIdx = inWeek ? d - 15 : null;
+    const isDone = dayIdx !== null && !!state.completedDays[dayIdx];
+    const isToday = d === 15;
+    const dc = el('div', { class: 'cal-day' }, String(d));
+    dc.style.background = isDone ? 'rgba(63,185,80,0.2)' : 'transparent';
+    dc.style.border = isToday ? '1px solid #3FB950' : (inWeek ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent');
+    dc.style.color = isDone ? '#3FB950' : (inWeek ? '#E6EDF3' : 'rgba(139,148,158,0.4)');
+    dc.style.fontWeight = isToday ? '700' : '400';
+    days.appendChild(dc);
+  }
+  cal.appendChild(days);
+  g2.appendChild(cal);
+
+  // Checkpoints
+  const cpWrap = el('div', { class: 'cp-wrap' }, el('div', { class: 'cp-header' }, 'CHECKPOINTS'));
+  const cpList = el('div', { class: 'cp-list' });
+  CPS.forEach(cp => {
+    const badge = el('div', { class: 'cp-badge' }, cp.id);
+    badge.style.border = '1px solid ' + cp.color;
+    badge.style.color = cp.color;
+    const info = el('div', {},
+      el('div', { class: 'cp-name' }, cp.name),
+      el('div', { class: 'cp-date' }, cp.date)
+    );
+    cpList.appendChild(el('div', { class: 'cp-item' }, badge, info));
+  });
+  cpWrap.appendChild(cpList);
+  g2.appendChild(cpWrap);
+  wrap.appendChild(g2);
+
+  // Phases bar
+  const ph = el('div', { class: 'phases-wrap' },
+    el('div', { class: 'phases-header' }, 'MACROFASES — 52 SEMANAS')
+  );
+  const bar = el('div', { class: 'phases-bar' });
+  PHASES.forEach(p => {
+    const seg = document.createElement('div');
+    seg.style.cssText = 'flex:' + p.r + ';background:' + (p.active ? p.color : 'rgba(255,255,255,0.05)');
+    bar.appendChild(seg);
+  });
+  ph.appendChild(bar);
+  const pl = el('div', { class: 'phases-list' });
+  PHASES.forEach(p => {
+    const row = el('div', { class: 'phase-row' });
+    const dot = el('div', { class: 'phase-dot' });
+    dot.style.background = p.color;
+    const pid = el('div', { class: 'phase-id', style: 'color:' + p.color }, p.id);
+    const pname = el('div', { class: 'phase-name', style: 'color:' + (p.active ? '#E6EDF3' : '#8B949E') }, p.name);
+    row.append(dot, pid, pname);
+    if (p.active) row.appendChild(el('span', { class: 'phase-active' }, 'ACTIVA'));
+    row.appendChild(el('span', { class: 'phase-weeks' }, 'Sem ' + p.weeks));
+    row.appendChild(el('span', { class: 'phase-dates' }, '· ' + p.dates));
+    pl.appendChild(row);
+  });
+  ph.appendChild(pl);
+  wrap.appendChild(ph);
+
+  // Control buttons
+  const btnExport = el('button', { class: 'control-btn primary' }, '📥 Exportar CSV');
+  btnExport.addEventListener('click', exportToCSV);
+  const btnReload = el('button', { class: 'control-btn' }, '🔄 Recargar tabla');
+  btnReload.addEventListener('click', () => {
+    const container = document.getElementById('progDataContainer');
+    container.innerHTML = '';
+    container.appendChild(renderProgressTable());
+  });
+  const btnClear = el('button', { class: 'control-btn danger' }, '🗑 Limpiar datos');
+  btnClear.addEventListener('click', clearProgressData);
+  wrap.appendChild(el('div', { class: 'control-buttons' }, btnExport, btnReload, btnClear));
+
+  // Progress data section
+  const progSection = el('div', { style: 'margin-top:32px' });
+  progSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase' }, 'Análisis Semanal — 52 Semanas'));
+
+  const progDataContainer = el('div', { id: 'progDataContainer' });
+  progDataContainer.appendChild(renderProgressTable());
+  progSection.appendChild(progDataContainer);
+
+  // Charts section
+  const chartsSection = el('div', { style: 'margin-top:32px;margin-bottom:32px' });
+  chartsSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase' }, 'Gráficos de Análisis'));
+
+  // Chart 1: Volumen
+  const chart1Div = el('div', { class: 'chart-container' });
+  chart1Div.appendChild(el('div', { class: 'chart-title' }, '1. Volumen: Real vs Teórico (km)'));
+  const canvasVol = el('canvas', { id: 'chartVolume' });
+  chart1Div.appendChild(canvasVol);
+  chartsSection.appendChild(chart1Div);
+
+  // Chart 2: Desnivel
+  const chart2Div = el('div', { class: 'chart-container' });
+  chart2Div.appendChild(el('div', { class: 'chart-title' }, '2. Desnivel: Real vs Teórico (m)'));
+  const canvasElev = el('canvas', { id: 'chartElevation' });
+  chart2Div.appendChild(canvasElev);
+  chartsSection.appendChild(chart2Div);
+
+  // Chart 3: Ritmo
+  const chart3Div = el('div', { class: 'chart-container' });
+  chart3Div.appendChild(el('div', { class: 'chart-title' }, '3. Ritmo Medio en Tirada Larga (min/km)'));
+  const canvasRitmo = el('canvas', { id: 'chartRitmo' });
+  chart3Div.appendChild(canvasRitmo);
+  chartsSection.appendChild(chart3Div);
+
+  // Chart 4: Duración
+  const chart4Div = el('div', { class: 'chart-container' });
+  chart4Div.appendChild(el('div', { class: 'chart-title' }, '4. Duración Tirada Larga (horas)'));
+  const canvasDuracion = el('canvas', { id: 'chartDuracion' });
+  chart4Div.appendChild(canvasDuracion);
+  chartsSection.appendChild(chart4Div);
+
+  wrap.appendChild(chartsSection);
+
+  // Initialize charts after a short delay to ensure DOM is ready
+  setTimeout(() => {
+    updateProgressCharts();
+  }, 100);
+
+  return wrap;
+}
+
+let progressCharts = {};
+
+function updateProgressCharts() {
+  // Destroy existing charts
+  Object.values(progressCharts).forEach(c => c?.destroy?.());
+  progressCharts = {};
+
+  // Calculate current week volume from completed workouts
+  let weekVolume = 0, weekElev = 0, weekDuration = 0;
+  for (let i = 0; i < 7; i++) {
+    if (state.workoutData[i]) {
+      const d = state.workoutData[i];
+      weekVolume += parseFloat(d.distance) || 0;
+      weekElev += parseInt(d.elevation) || 0;
+      weekDuration += parseInt(d.duration) || 0;
+    }
+  }
+
+  const volReal = WEEKS_PLAN.map((w, idx) => {
+    if (w.week === 1) return weekVolume || null;
+    return parseFloat(state.progressData[String(w.week)]?.volReal) || null;
+  });
+  const volTeor = WEEKS_PLAN.map(w => w.vol);
+  const elevReal = WEEKS_PLAN.map((w, idx) => {
+    if (w.week === 1) return weekElev || null;
+    return parseFloat(state.progressData[String(w.week)]?.elevReal) || null;
+  });
+  const elevTeor = WEEKS_PLAN.map(w => w.elev);
+  const ritmo = WEEKS_PLAN.map(w => parseFloat(state.progressData[String(w.week)]?.ritmo) || null);
+  const duracion = WEEKS_PLAN.map((w, idx) => {
+    if (w.week === 1) return weekDuration ? (weekDuration / 60) : null;
+    return parseFloat(state.progressData[String(w.week)]?.duracion) || null;
+  });
+  const duracionTeor = WEEKS_PLAN.map(w => {
+    if (w.week >= 45) return 2;
+    if (w.week >= 29) return 3.5;
+    if (w.week >= 13) return 3;
+    return 2.5;
+  });
+  const weeks = WEEKS_PLAN.map(w => 'S' + w.week);
+
+  const chartOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { labels: { color: '#8B949E', font: { size: 11 } } } },
+    scales: { y: { grid: { color: 'rgba(33,38,45,0.5)' }, ticks: { color: '#8B949E' } }, x: { grid: { color: 'rgba(33,38,45,0.5)' }, ticks: { color: '#8B949E' } } }
+  };
+
+  // Chart 1: Volumen
+  const ctxVol = document.getElementById('chartVolume');
+  if (ctxVol) {
+    progressCharts.vol = new Chart(ctxVol, {
+      type: 'line',
+      data: {
+        labels: weeks,
+        datasets: [
+          { label: 'Teórico', data: volTeor, borderColor: '#388BFD', backgroundColor: 'rgba(56,139,253,0.1)', tension: 0.3 },
+          { label: 'Real', data: volReal, borderColor: '#F0883E', backgroundColor: 'rgba(240,136,62,0.1)', tension: 0.3 }
+        ]
+      },
+      options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, max: 100 } } }
+    });
+  }
+
+  // Chart 2: Desnivel (bar)
+  const ctxElev = document.getElementById('chartElevation');
+  if (ctxElev) {
+    progressCharts.elev = new Chart(ctxElev, {
+      type: 'bar',
+      data: {
+        labels: weeks,
+        datasets: [
+          { label: 'Teórico', data: elevTeor, backgroundColor: 'rgba(56,139,253,0.6)', borderColor: '#388BFD' },
+          { label: 'Real', data: elevReal, backgroundColor: 'rgba(240,136,62,0.6)', borderColor: '#F0883E' }
+        ]
+      },
+      options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, max: 6500 } } }
+    });
+  }
+
+  // Chart 3: Ritmo
+  const ctxRitmo = document.getElementById('chartRitmo');
+  if (ctxRitmo) {
+    progressCharts.ritmo = new Chart(ctxRitmo, {
+      type: 'line',
+      data: {
+        labels: weeks,
+        datasets: [
+          { label: 'Ritmo Tirada Larga', data: ritmo, borderColor: '#A371F7', backgroundColor: 'rgba(163,113,247,0.1)', tension: 0.3, pointRadius: 4 }
+        ]
+      },
+      options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, min: 6, max: 8.5 } } }
+    });
+  }
+
+  // Chart 4: Duración
+  const ctxDuracion = document.getElementById('chartDuracion');
+  if (ctxDuracion) {
+    progressCharts.duracion = new Chart(ctxDuracion, {
+      type: 'bar',
+      data: {
+        labels: weeks,
+        datasets: [
+          { label: 'Teórica', data: duracionTeor, backgroundColor: 'rgba(56,139,253,0.6)', borderColor: '#388BFD' },
+          { label: 'Real', data: duracion, backgroundColor: 'rgba(240,136,62,0.6)', borderColor: '#F0883E' }
+        ]
+      },
+      options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, max: 6.5 } } }
+    });
+  }
+}
+
+function renderRaces() {
+  const wrap = document.createElement('div');
+
+  wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
+    el('div', { class: 'page-eyebrow' }, 'COMPETICIONES'),
+    el('h1', { class: 'page-title' }, 'Carreras & Tests'),
+    el('div', { class: 'page-sub' }, 'Plan de 4 pruebas + Ultra 80K')
+  ));
+
+  // Races list
+  const racesGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:16px;margin-bottom:32px' });
+
+  RACES.forEach(race => {
+    const done = !!state.raceData[race.id];
+    const data = state.raceData[race.id];
+    const card = el('div', { class: 'info-card', style: done ? 'border-color:#3FB950;background:rgba(63,185,80,0.02)' : '' });
+
+    // Header
+    card.appendChild(el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px' },
+      el('div', {},
+        el('div', { class: 'info-label' }, race.type === 'race' ? '🏁 CARRERA' : '⏱️ TEST'),
+        el('h3', { style: 'font-size:16px;font-weight:700;color:#E6EDF3;margin:4px 0' }, race.name)
+      ),
+      done ? el('div', { style: 'background:#3FB950;color:#0D1117;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600' }, '✓') : null
+    ));
+
+    // Date
+    card.appendChild(el('div', { style: 'font-size:12px;color:#8B949E;margin-bottom:12px;font-family:monospace' }, new Date(race.date).toLocaleDateString('es-ES', {weekday:'long', year:'numeric', month:'long', day:'numeric'})));
+
+    // Mesociclo badge
+    if (race.mesociclo) {
+      card.appendChild(el('div', { style: 'font-size:10px;color:#A371F7;background:rgba(163,113,247,0.1);padding:4px 8px;border-radius:3px;margin-bottom:12px;display:inline-block;font-weight:500' }, race.mesociclo));
+    }
+
+    // Theoretical data grid
+    const dataGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;padding:12px;background:#0D1117;border-radius:4px' });
+    dataGrid.appendChild(el('div', {},
+      el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Distancia'),
+      el('div', { style: 'font-size:14px;font-weight:600;color:#3FB950;font-family:monospace' }, race.distance + ' km')
+    ));
+    dataGrid.appendChild(el('div', {},
+      el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Desnivel'),
+      el('div', { style: 'font-size:14px;font-weight:600;color:#F0883E;font-family:monospace' }, race.elevation + ' m')
+    ));
+    dataGrid.appendChild(el('div', {},
+      el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Tiempo est.'),
+      el('div', { style: 'font-size:12px;font-weight:600;color:#388BFD;font-family:monospace' }, Math.floor(race.timeMin / 60) + 'h' + (race.timeMin % 60).toString().padStart(2,'0') + ' – ' + Math.floor(race.timeMax / 60) + 'h' + (race.timeMax % 60).toString().padStart(2,'0') + 'm')
+    ));
+    dataGrid.appendChild(el('div', {},
+      el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Ritmo'),
+      el('div', { style: 'font-size:12px;font-weight:600;color:#A371F7;font-family:monospace' }, race.ritmoMin.toFixed(2) + ' – ' + race.ritmoMax.toFixed(2) + ' min/km')
+    ));
+    card.appendChild(dataGrid);
+
+    // Objetivo y criterio
+    card.appendChild(el('div', { style: 'margin-bottom:12px;padding:12px;background:rgba(56,139,253,0.05);border-left:3px solid #388BFD;border-radius:4px' },
+      el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:4px;font-weight:600' }, 'Objetivo'),
+      el('div', { style: 'font-size:12px;color:#E6EDF3;line-height:1.4;margin-bottom:8px' }, race.objetivo),
+      el('div', { style: 'font-size:10px;color:#8B949E;text-transform:uppercase;margin-bottom:4px;font-weight:600' }, 'Criterio de Éxito'),
+      el('div', { style: 'font-size:12px;color:#C9D1D9;line-height:1.4' }, race.criterio)
+    ));
+
+    if (done && data) {
+      // Show results comparison
+      const realGrid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;padding:12px;background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.2);border-radius:4px' });
+      realGrid.appendChild(el('div', {},
+        el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Tiempo Real'),
+        el('div', { style: 'font-size:14px;font-weight:600;color:#3FB950;font-family:monospace' }, Math.floor(data.time / 60) + 'h ' + (data.time % 60) + 'min')
+      ));
+      realGrid.appendChild(el('div', {},
+        el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Ritmo Real'),
+        el('div', { style: 'font-size:14px;font-weight:600;color:#3FB950;font-family:monospace' }, data.ritmo + ' min/km')
+      ));
+      realGrid.appendChild(el('div', {},
+        el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Diferencia'),
+        el('div', { style: 'font-size:14px;font-weight:600;color:' + (data.time < race.timeMin ? '#3FB950' : '#F0883E') + ';font-family:monospace' }, (data.time < race.timeMin ? '−' : '+') + Math.abs(race.timeMin - data.time) + ' min')
+      ));
+      realGrid.appendChild(el('div', {},
+        el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Estado'),
+        el('div', { style: 'font-size:13px;font-weight:600;color:' + (data.time <= race.timeMin ? '#3FB950' : data.time <= race.timeMin * 1.1 ? '#F0883E' : '#f05858') },
+          data.time <= race.timeMin ? '✓ Cumplido' : data.time <= race.timeMin * 1.1 ? '≈ En límite' : '✗ Superado')
+      ));
+      card.appendChild(realGrid);
+
+      if (data.notes) {
+        card.appendChild(el('div', { style: 'font-size:11px;color:#C9D1D9;padding-top:12px;border-top:1px solid #21262D' }, data.notes));
+      }
+    } else {
+      const btn = el('button', { class: 'complete-btn undone', style: 'width:100%;margin-top:8px' });
+      btn.textContent = '📋 Marcar como completado';
+      btn.addEventListener('click', () => {
+        state.selectedRace = race.id;
+        state.showingRaceForm = true;
+        const modal = renderRaceForm(race);
+        document.body.appendChild(modal);
+      });
+      card.appendChild(btn);
+    }
+
+    racesGrid.appendChild(card);
+  });
+
+  wrap.appendChild(racesGrid);
+  return wrap;
+}
+
+function renderRaceForm(race) {
+  const modal = el('div', { style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999' });
+  const card = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:24px;max-width:500px;max-height:90vh;overflow-y:auto;width:90%' });
+
+  card.appendChild(el('h2', { style: 'font-size:18px;font-weight:700;color:#E6EDF3;margin-bottom:20px' }, '📋 Completar: ' + race.name));
+
+  const form = el('div', {});
+
+  // Time
+  const timeInput = el('input', { type: 'number', placeholder: 'ej: 390', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase' }, 'Tiempo (minutos)'),
+    timeInput
+  ));
+
+  // Ritmo
+  const ritmoInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 6.5', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase' }, 'Ritmo (min/km)'),
+    ritmoInput
+  ));
+
+  // Elevation
+  const elevationInput = el('input', { type: 'number', placeholder: 'ej: 1200', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase' }, 'Desnivel Real (m)'),
+    elevationInput
+  ));
+
+  // Sensaciones
+  const sensacionesInput = el('input', { type: 'number', min: '1', max: '5', placeholder: 'ej: 4', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase' }, 'Sensaciones (1-5)'),
+    sensacionesInput
+  ));
+
+  // Notes
+  const notesInput = el('textarea', { placeholder: 'Observaciones, cómo te sentiste, etc.', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;min-height:60px;resize:vertical;margin-bottom:16px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase' }, 'Notas'),
+    notesInput
+  ));
+
+  card.appendChild(form);
+
+  // Buttons
+  const btnGroup = el('div', { style: 'display:flex;gap:8px' });
+  const saveBtn = el('button', { type: 'button', class: 'complete-btn undone', style: 'flex:1' });
+  saveBtn.textContent = '✓ Guardar Resultado';
+  saveBtn.addEventListener('click', () => {
+    const time = parseInt(timeInput.value);
+    const ritmo = parseFloat(ritmoInput.value);
+    if (!time || !ritmo) {
+      alert('Por favor completa tiempo y ritmo');
+      return;
+    }
+    state.raceData[race.id] = {
+      time,
+      ritmo,
+      elevation: parseInt(elevationInput.value) || 0,
+      sensaciones: parseInt(sensacionesInput.value) || 0,
+      notes: notesInput.value
+    };
+    saveRaceData();
+    state.showingRaceForm = false;
+    modal.remove();
+    paintRaces();
+  });
+
+  const cancelBtn = el('button', { type: 'button', class: 'complete-btn done-state', style: 'flex:1' });
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => {
+    state.showingRaceForm = false;
+    modal.remove();
+  });
+
+  btnGroup.appendChild(saveBtn);
+  btnGroup.appendChild(cancelBtn);
+  card.appendChild(btnGroup);
+  modal.appendChild(card);
+
+  return modal;
+}
+
+// ─── ROUTING ─────────────────────────────────────────────────────────────────
+function setView(view) {
+  state.view = view;
+  state.selectedDay = null;
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? '' : 'none';
+  document.getElementById('view-session').style.display   = view === 'session'   ? '' : 'none';
+  document.getElementById('view-progress').style.display  = view === 'progress'  ? '' : 'none';
+  document.getElementById('view-races').style.display     = view === 'races'     ? '' : 'none';
+  document.getElementById('btn-dashboard').classList.toggle('active', view === 'dashboard' || view === 'session');
+  document.getElementById('btn-progress').classList.toggle('active', view === 'progress');
+  document.getElementById('btn-races').classList.toggle('active', view === 'races');
+  if (view === 'dashboard') paintDashboard();
+  if (view === 'progress')  paintProgress();
+  if (view === 'races')     paintRaces();
+  localStorage.setItem('trailapp_view', view);
+}
+
+function openSession(idx) {
+  state.view = 'session';
+  state.selectedDay = idx;
+  document.getElementById('view-dashboard').style.display = 'none';
+  document.getElementById('view-progress').style.display  = 'none';
+  const v = document.getElementById('view-session');
+  v.style.display = '';
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderSession(idx));
+  document.getElementById('btn-dashboard').classList.add('active');
+  document.getElementById('btn-progress').classList.remove('active');
+}
+
+function paintDashboard() {
+  const v = document.getElementById('view-dashboard');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderDashboard());
+}
+
+function paintProgress() {
+  const v = document.getElementById('view-progress');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderProgress());
+  setTimeout(() => updateProgressCharts(), 200);
+}
+
+function paintRaces() {
+  const v = document.getElementById('view-races');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderRaces());
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.getElementById('days-count').textContent = daysUntil('2027-06-15');
+
+// Restore saved view
+const savedView = localStorage.getItem('trailapp_view') || 'dashboard';
+paintDashboard();
+paintProgress();
+setView(savedView);
+if (savedView === 'session') setView('dashboard');
+</script>
+</body>
 </html>
