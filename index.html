@@ -1858,24 +1858,33 @@ async function loadFromSupabase() {
 
 async function initializeSupabase() {
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
-      const { data, error: anonError } = await supabase.auth.signInAnonymously();
-      if (anonError) throw anonError;
-      state.userId = data.user.id;
-    } else {
-      state.userId = user.id;
+    if (!window.supabase) {
+      throw new Error('Supabase not loaded');
     }
-    await loadFromSupabase();
-    paintDashboard();
-    paintProgress();
-    setView(localStorage.getItem('trailapp_view') || 'dashboard');
+
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (!error && user) {
+      state.userId = user.id;
+      await loadFromSupabase();
+    } else {
+      try {
+        const { data, error: anonError } = await supabase.auth.signInAnonymously();
+        if (!anonError && data?.user) {
+          state.userId = data.user.id;
+          await loadFromSupabase();
+        }
+      } catch (e) {
+        console.warn('Anon auth failed:', e);
+      }
+    }
   } catch (e) {
-    console.error('Supabase init failed:', e);
-    paintDashboard();
-    paintProgress();
-    setView(localStorage.getItem('trailapp_view') || 'dashboard');
+    console.warn('Supabase init failed, using localStorage only:', e);
   }
+
+  // Always load and render
+  paintDashboard();
+  paintProgress();
+  setView(localStorage.getItem('trailapp_view') || 'dashboard');
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
