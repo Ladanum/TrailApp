@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TrailApp — Ultra 80K</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; background: #f5f5f5; overflow: hidden; }
@@ -476,6 +477,11 @@ const WEEKS_PLAN = [
   {week:49, vol:24, elev:600},   {week:50, vol:18, elev:400},   {week:51, vol:12, elev:200},   {week:52, vol:0,  elev:0},
 ];
 
+// ─── SUPABASE CLIENT ─────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://ynzhvkpftycdzzqqcdih.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inluemh2a3BmdHljZHp6cXFjZGloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDUzMDMyNDgsImV4cCI6MjAyMDg3OTI0OH0.o5WRVnX0rrm5H3-4sFLxuI6mzlEnT4Qs0CqkDx0OWkY';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ─── STATE ───────────────────────────────────────────────────────────────────
 const state = {
   view: 'dashboard',
@@ -489,22 +495,48 @@ const state = {
   raceData: JSON.parse(localStorage.getItem('trailapp_races') || '{}'),
   selectedRace: null,
   showingRaceForm: false,
+  userId: null,
 };
+
+async function syncToSupabase() {
+  if (!state.userId) return;
+  try {
+    const data = {
+      user_id: state.userId,
+      completed_days: state.completedDays,
+      workout_data: state.workoutData,
+      progress_data: state.progressData,
+      race_data: state.raceData,
+      extra_activities: state.extraActivities,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await supabase
+      .from('user_data')
+      .upsert(data, { onConflict: 'user_id' });
+    if (error) console.error('Sync error:', error);
+  } catch (e) {
+    console.error('Sync failed:', e);
+  }
+}
 
 function saveState() {
   localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
+  syncToSupabase();
 }
 
 function saveProgressData() {
   localStorage.setItem('progreso_ultra_2026', JSON.stringify(state.progressData));
+  syncToSupabase();
 }
 
 function saveExtraActivities() {
   localStorage.setItem('trailapp_extras', JSON.stringify(state.extraActivities));
+  syncToSupabase();
 }
 
 function saveRaceData() {
   localStorage.setItem('trailapp_races', JSON.stringify(state.raceData));
+  syncToSupabase();
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -1798,15 +1830,59 @@ function paintRaces() {
   v.appendChild(renderRaces());
 }
 
+async function loadFromSupabase() {
+  if (!state.userId) return;
+  try {
+    const { data, error } = await supabase
+      .from('user_data')
+      .select('*')
+      .eq('user_id', state.userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Load error:', error);
+      return;
+    }
+
+    if (data) {
+      state.completedDays = data.completed_days || {};
+      state.workoutData = data.workout_data || {};
+      state.progressData = data.progress_data || {};
+      state.raceData = data.race_data || {};
+      state.extraActivities = data.extra_activities || [];
+    }
+  } catch (e) {
+    console.error('Load failed:', e);
+  }
+}
+
+async function initializeSupabase() {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      const { data, error: anonError } = await supabase.auth.signInAnonymously();
+      if (anonError) throw anonError;
+      state.userId = data.user.id;
+    } else {
+      state.userId = user.id;
+    }
+    await loadFromSupabase();
+    paintDashboard();
+    paintProgress();
+    setView(localStorage.getItem('trailapp_view') || 'dashboard');
+  } catch (e) {
+    console.error('Supabase init failed:', e);
+    paintDashboard();
+    paintProgress();
+    setView(localStorage.getItem('trailapp_view') || 'dashboard');
+  }
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.getElementById('days-count').textContent = daysUntil('2027-06-15');
 
-// Restore saved view
-const savedView = localStorage.getItem('trailapp_view') || 'dashboard';
-paintDashboard();
-paintProgress();
-setView(savedView);
-if (savedView === 'session') setView('dashboard');
+// Initialize with Supabase
+initializeSupabase();
 </script>
 </body>
 </html>
