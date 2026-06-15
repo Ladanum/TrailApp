@@ -1,106 +1,81 @@
 import { useState } from 'react'
+import PostWorkoutForm from '../forms/PostWorkoutForm'
+import DailyStateForm from '../forms/DailyStateForm'
+import { useWorkouts } from '../../hooks/useWorkouts'
+import { useDailyState } from '../../hooks/useDailyState'
+import { useMacrocycle } from '../../hooks/useMacrocycle'
 
 export default function DashboardPro() {
-  const [view, setView] = useState<'dashboard' | 'session' | 'progress'>('dashboard')
-  const [selectedDay, setSelectedDay] = useState<number | null>(null)
-  const [completedDays, setCompletedDays] = useState<Record<number, boolean>>({})
+  const [view, setView] = useState<'dashboard' | 'progress'>('dashboard')
+  const [showWorkoutForm, setShowWorkoutForm] = useState(false)
+  const [showDailyStateForm, setShowDailyStateForm] = useState(false)
+
+  const { workouts, loading: workoutsLoading } = useWorkouts()
+  const { dailyState, loading: dailyStateLoading } = useDailyState()
+  const { macrophases, currentPhase } = useMacrocycle()
+
+  // Calculate stats
+  const thisWeekWorkouts = workouts.filter((w) => {
+    const wDate = new Date(w.date)
+    const today = new Date()
+    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return wDate >= weekAgo && wDate <= today
+  })
+
+  const weeklyVolume = thisWeekWorkouts.reduce((acc, w) => acc + (w.distance_km || 0), 0).toFixed(1)
+  const weeklyElevation = thisWeekWorkouts.reduce((acc, w) => acc + (w.elevation_gain || 0), 0)
 
   const today = new Date('2026-06-15')
   const raceDate = new Date('2027-06-15')
   const daysUntilRace = Math.ceil((raceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
-  const sessions = [
+  const phases = [
     {
-      index: 0,
-      day: 'LUN',
-      date: '15 jun',
-      type: 'Z1',
-      description: 'Rodaje suave en llano. Primera salida — tobillo en observación total.',
-      duration: '45 min',
-      alert: true,
-      completed: completedDays[0] || false,
+      id: 'MF1',
+      name: 'Recuperación y Base',
+      weeks: '1–12',
+      color: '#388BFD',
+      r: 12 / 52,
+      dates: '15 jun – 6 sep 2026',
+      active: true,
     },
     {
-      index: 1,
-      day: 'MAR',
-      date: '16 jun',
-      type: 'GYM',
-      description: 'Fuerza: Bloque A (Tobillo) + Bloque B (Core)',
-      duration: '50 min',
-      alert: true,
-      completed: completedDays[1] || false,
+      id: 'MF2',
+      name: 'Desarrollo Aeróbico',
+      weeks: '13–28',
+      color: '#3FB950',
+      r: 16 / 52,
+      dates: '7 sep – 27 dic 2026',
+      active: false,
     },
     {
-      index: 2,
-      day: 'MIÉ',
-      date: '17 jun',
-      type: 'Z2',
-      description: 'Rodaje aeróbico base en llano. Ritmo cómodo, conversación fluida.',
-      duration: '60 min',
-      alert: false,
-      completed: completedDays[2] || false,
+      id: 'MF3',
+      name: 'Específico Ultra',
+      weeks: '29–44',
+      color: '#F0883E',
+      r: 16 / 52,
+      dates: '28 dic 2026 – 18 abr 2027',
+      active: false,
     },
     {
-      index: 3,
-      day: 'JUE',
-      date: '18 jun',
-      type: 'REC',
-      description: 'Recuperación activa: Bloque E completo (movilidad)',
-      duration: '25 min',
-      alert: false,
-      completed: completedDays[3] || false,
-    },
-    {
-      index: 4,
-      day: 'VIE',
-      date: '19 jun',
-      type: 'Z2',
-      description: 'Rodaje aeróbico base en llano.',
-      duration: '55 min',
-      alert: false,
-      completed: completedDays[4] || false,
-    },
-    {
-      index: 5,
-      day: 'SÁB',
-      date: '20 jun',
-      type: 'GYM',
-      description: 'Fuerza: Bloque C (Tren inferior) + Bloque D (Cadena posterior)',
-      duration: '55 min',
-      alert: false,
-      completed: completedDays[5] || false,
-    },
-    {
-      index: 6,
-      day: 'DOM',
-      date: '21 jun',
-      type: 'TL',
-      description: 'Tirada larga Z1. Llano. Ritmo muy fácil todo el recorrido.',
-      duration: '75 min',
-      alert: false,
-      completed: completedDays[6] || false,
+      id: 'MF4',
+      name: 'Taper + Carrera',
+      weeks: '45–52',
+      color: '#A371F7',
+      r: 8 / 52,
+      dates: '19 abr – 15 jun 2027',
+      active: false,
     },
   ]
 
-  const completedCount = Object.values(completedDays).filter(Boolean).length
+  const checkpoints = [
+    { id: 'CP1', name: 'Fin MF1 — Base establecida', date: '6 sep 2026', color: '#388BFD' },
+    { id: 'CP2', name: 'Fin MF2 — Aeróbico consolidado', date: '27 dic 2026', color: '#3FB950' },
+    { id: 'CP3', name: 'Fin MF3 — Específico completado', date: '18 abr 2027', color: '#F0883E' },
+    { id: 'RACE', name: 'Ultra 80K · Sub 11h', date: '15 jun 2027', color: '#A371F7' },
+  ]
 
-  const toggleDay = (index: number) => {
-    setCompletedDays((prev) => ({
-      ...prev,
-      [index]: !prev[index],
-    }))
-  }
-
-  const getBadgeColor = (type: string) => {
-    const colors: Record<string, { bg: string; text: string; border: string }> = {
-      Z1: { bg: 'rgba(56,139,253,0.14)', text: '#388BFD', border: 'rgba(56,139,253,0.28)' },
-      Z2: { bg: 'rgba(56,139,253,0.14)', text: '#388BFD', border: 'rgba(56,139,253,0.28)' },
-      GYM: { bg: 'rgba(163,113,247,0.14)', text: '#A371F7', border: 'rgba(163,113,247,0.28)' },
-      TL: { bg: 'rgba(63,185,80,0.14)', text: '#3FB950', border: 'rgba(63,185,80,0.28)' },
-      REC: { bg: 'rgba(139,148,158,0.14)', text: '#8B949E', border: 'rgba(139,148,158,0.28)' },
-    }
-    return colors[type] || colors['Z1']
-  }
+  const loading = workoutsLoading || dailyStateLoading
 
   return (
     <div className="flex h-screen bg-[#0D1117] text-[#E6EDF3] font-inter overflow-hidden">
@@ -108,7 +83,7 @@ export default function DashboardPro() {
       <nav className="w-56 bg-[#0D1117] border-r border-[#21262D] flex flex-col flex-shrink-0">
         {/* Header */}
         <div className="px-5 py-5 border-b border-[#21262D]">
-          <div className="font-mono text-xs letter-spacing-wider text-accent-green font-bold uppercase mb-1">
+          <div className="font-mono text-xs text-[#3FB950] font-bold uppercase mb-1 tracking-wider">
             TrailApp
           </div>
           <div className="text-lg font-black text-[#E6EDF3] -tracking-wide mb-1">Ultra 80K</div>
@@ -120,48 +95,16 @@ export default function DashboardPro() {
           <button
             onClick={() => setView('dashboard')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-l-2 transition ${
-              view === 'dashboard' || view === 'session'
-                ? 'border-accent-green bg-accent-green/5 text-[#E6EDF3]'
+              view === 'dashboard'
+                ? 'border-[#3FB950] bg-[#3FB950]/5 text-[#E6EDF3]'
                 : 'border-transparent text-[#8B949E] hover:text-[#E6EDF3]'
             }`}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-              <rect
-                x="1"
-                y="1"
-                width="5.5"
-                height="5.5"
-                rx="1.2"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              ></rect>
-              <rect
-                x="8.5"
-                y="1"
-                width="5.5"
-                height="5.5"
-                rx="1.2"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              ></rect>
-              <rect
-                x="1"
-                y="8.5"
-                width="5.5"
-                height="5.5"
-                rx="1.2"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              ></rect>
-              <rect
-                x="8.5"
-                y="8.5"
-                width="5.5"
-                height="5.5"
-                rx="1.2"
-                stroke="currentColor"
-                strokeWidth="1.3"
-              ></rect>
+              <rect x="1" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"></rect>
+              <rect x="8.5" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"></rect>
+              <rect x="1" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"></rect>
+              <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" strokeWidth="1.3"></rect>
             </svg>
             <span>Dashboard</span>
           </button>
@@ -170,7 +113,7 @@ export default function DashboardPro() {
             onClick={() => setView('progress')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-l-2 transition ${
               view === 'progress'
-                ? 'border-accent-green bg-accent-green/5 text-[#E6EDF3]'
+                ? 'border-[#3FB950] bg-[#3FB950]/5 text-[#E6EDF3]'
                 : 'border-transparent text-[#8B949E] hover:text-[#E6EDF3]'
             }`}
           >
@@ -182,12 +125,7 @@ export default function DashboardPro() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
               ></path>
-              <path
-                d="M1.5 13.5H13.5"
-                stroke="currentColor"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-              ></path>
+              <path d="M1.5 13.5H13.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"></path>
             </svg>
             <span>Progreso</span>
           </button>
@@ -195,168 +133,173 @@ export default function DashboardPro() {
 
         {/* Days Until Race */}
         <div className="px-5 py-4 border-t border-[#21262D]">
-          <div className="text-xs uppercase text-[#8B949E] font-medium mb-2 letter-spacing-wider">
-            Días hasta carrera
-          </div>
-          <div className="font-mono text-4xl font-bold text-accent-green leading-none -tracking-wide">
-            {daysUntilRace}
-          </div>
+          <div className="text-xs uppercase text-[#8B949E] font-medium mb-2 tracking-wider">Días hasta carrera</div>
+          <div className="font-mono text-4xl font-bold text-[#3FB950] leading-none -tracking-wide">{daysUntilRace}</div>
           <div className="font-mono text-xs text-[#8B949E] mt-1.5">15 jun 2027</div>
         </div>
       </nav>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-9 py-8">
-        {/* Dashboard View */}
-        {(view === 'dashboard' || view === 'session') && (
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-[#8B949E]">Cargando...</div>
+          </div>
+        ) : view === 'dashboard' ? (
           <div>
+            {/* Header */}
             <div className="flex justify-between items-start gap-4 mb-5 flex-wrap">
               <div>
-                <div className="font-mono text-xs text-accent-green letter-spacing-wider uppercase mb-1">
-                  MF1 · SEMANA 01 · MICROCICLO A
+                <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1">
+                  {currentPhase?.name || 'PLAN'} · SEMANA 01
                 </div>
-                <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">
-                  Dashboard Semanal
-                </h1>
-                <div className="text-sm text-[#8B949E]">Recuperación y Base · 15–21 junio 2026</div>
+                <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">Dashboard Semanal</h1>
+                <div className="text-sm text-[#8B949E]">
+                  {currentPhase?.description || 'Entrenamientos'} · {new Date().toLocaleDateString()}
+                </div>
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3 text-right flex-shrink-0">
-                <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-medium mb-1">
-                  Sesiones completadas
+                <div className="text-xs uppercase tracking-wider text-[#8B949E] font-medium mb-1">
+                  Entrenamientos esta semana
                 </div>
-                <div className="font-mono text-2xl font-bold text-accent-green">
-                  {completedCount}
-                  <span className="text-sm text-[#8B949E] font-normal"> / 7</span>
+                <div className="font-mono text-2xl font-bold text-[#3FB950]">
+                  {thisWeekWorkouts.length}
                 </div>
               </div>
             </div>
 
-            {/* Sessions Grid */}
-            <div className="grid grid-cols-7 gap-2 mb-5">
-              {sessions.map((session) => {
-                const badge = getBadgeColor(session.type)
-                return (
-                  <button
-                    key={session.index}
-                    onClick={() => {
-                      setSelectedDay(session.index)
-                      setView('session')
-                    }}
-                    style={{
-                      background: session.completed ? 'rgba(63,185,80,0.04)' : '#161B22',
-                      border: session.index === 0 ? '1.5px solid #3FB950' : session.completed ? '1px solid rgba(63,185,80,0.3)' : '1px solid #21262D',
-                    }}
-                    className="rounded-lg p-3 flex flex-col min-h-40 cursor-pointer hover:opacity-80 transition"
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-mono text-xs font-bold text-[#8B949E] letter-spacing-wider">
-                        {session.day}
-                      </span>
-                      {session.completed && (
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <circle cx="7" cy="7" r="6" fill="rgba(63,185,80,0.18)"></circle>
-                          <path
-                            d="M4.5 7L6.5 9L9.5 4.5"
-                            stroke="#3FB950"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          ></path>
-                        </svg>
-                      )}
-                    </div>
-                    <div className="font-mono text-xs text-[#8B949E] mb-2">{session.date}</div>
-                    <div
-                      style={{
-                        background: badge.bg,
-                        color: badge.text,
-                        border: `1px solid ${badge.border}`,
-                      }}
-                      className="inline-block px-2 py-1 rounded text-xs font-mono font-bold letter-spacing-wider mb-2"
-                    >
-                      {session.type}
-                    </div>
-                    <p className="text-xs text-[#8B949E] flex-1 line-clamp-2 text-left">{session.description}</p>
-                    <div className="flex justify-between items-center gap-1 mt-2 pt-2 border-t border-[#21262D]">
-                      <span className="font-mono text-xs text-[#E6EDF3] font-medium">{session.duration}</span>
-                      {session.alert && <span className="text-xs text-orange-400 bg-orange-400/10 border border-orange-400/20 rounded px-1">⚠️ tobillo</span>}
-                    </div>
-                  </button>
-                )
-              })}
+            {/* Action Buttons */}
+            <div className="space-y-3 mb-6">
+              {/* Register Workout */}
+              <button
+                onClick={() => setShowWorkoutForm(!showWorkoutForm)}
+                className="w-full bg-[#3FB950] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#3FB950]/90 transition flex justify-between items-center"
+              >
+                <div>
+                  <div className="text-2xl mb-1">🏃</div>
+                  <h2 className="font-bold">Registrar Entreno</h2>
+                  <p className="text-sm opacity-75">30 segundos</p>
+                </div>
+                <svg
+                  className={`w-6 h-6 transition-transform ${showWorkoutForm ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </button>
+
+              {showWorkoutForm && (
+                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
+                  <PostWorkoutForm onSubmit={() => setShowWorkoutForm(false)} />
+                </div>
+              )}
+
+              {/* Daily State */}
+              <button
+                onClick={() => setShowDailyStateForm(!showDailyStateForm)}
+                className="w-full bg-[#388BFD] text-[#0D1117] rounded-lg p-4 font-bold text-left hover:bg-[#388BFD]/90 transition flex justify-between items-center"
+              >
+                <div>
+                  <div className="text-2xl mb-1">😌</div>
+                  <h2 className="font-bold">Cómo te sientes</h2>
+                  <p className="text-sm opacity-75">Peso, estrés, sueño</p>
+                </div>
+                <svg
+                  className={`w-6 h-6 transition-transform ${showDailyStateForm ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </button>
+
+              {showDailyStateForm && (
+                <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
+                  <DailyStateForm onSubmit={() => setShowDailyStateForm(false)} />
+                </div>
+              )}
             </div>
 
-            {/* Quick Stats */}
+            {/* Recent Workouts */}
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-[#8B949E] uppercase tracking-wider mb-3">Entrenamientos Recientes</h3>
+              <div className="space-y-2">
+                {thisWeekWorkouts.slice(0, 5).map((w) => (
+                  <div key={w.id} className="bg-[#161B22] border border-[#21262D] rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-bold text-[#E6EDF3]">{w.distance_km}km</div>
+                        <div className="text-xs text-[#8B949E] mt-1">{w.duration_minutes} min</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-[#8B949E]">{new Date(w.date).toLocaleDateString()}</div>
+                        {w.zone && <div className="text-xs text-[#388BFD] font-mono font-bold mt-1">{w.zone}</div>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Stats */}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3.5">
-                <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-bold mb-1">
-                  Volumen sem.
-                </div>
-                <div className="font-mono text-xl font-bold text-[#E6EDF3]">~28 km</div>
-                <div className="text-xs text-[#8B949E] mt-1">5h 25min estimado</div>
+                <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-1">Volumen sem.</div>
+                <div className="font-mono text-xl font-bold text-[#E6EDF3]">{weeklyVolume} km</div>
+                <div className="text-xs text-[#8B949E] mt-1">{thisWeekWorkouts.length} entrenamientos</div>
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3.5">
-                <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-bold mb-1">
-                  D+ acumulado
-                </div>
-                <div className="font-mono text-xl font-bold text-[#E6EDF3]">0 m</div>
-                <div className="text-xs text-[#8B949E] mt-1">llano esta semana</div>
+                <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-1">D+ acumulado</div>
+                <div className="font-mono text-xl font-bold text-[#E6EDF3]">{weeklyElevation} m</div>
+                <div className="text-xs text-[#8B949E] mt-1">esta semana</div>
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3.5">
-                <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-bold mb-1">
-                  Zona dominante
-                </div>
-                <div className="font-mono text-xl font-bold text-accent-blue">Z1 / Z2</div>
-                <div className="text-xs text-[#8B949E] mt-1">base aeróbica</div>
+                <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-1">Estado actual</div>
+                <div className="font-mono text-xl font-bold text-[#388BFD]">{currentPhase?.name.split(' ')[0] || 'MF1'}</div>
+                <div className="text-xs text-[#8B949E] mt-1">macrofase activa</div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Progress View */}
-        {view === 'progress' && (
+        ) : (
+          /* Progress View */
           <div>
             <div className="mb-6">
-              <div className="font-mono text-xs text-accent-green letter-spacing-wider uppercase mb-1">
-                MF1 · PROGRESO
-              </div>
+              <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1">PLAN GENERAL</div>
               <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">Progreso</h1>
-              <div className="text-sm text-[#8B949E]">Semana 1 de 52 · Plan Ultra 80K</div>
+              <div className="text-sm text-[#8B949E]">Plan Ultra 80K</div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 mb-5">
-              {[
-                { label: 'Sesiones OK', value: String(completedCount), sub: 'de 7 esta semana', color: accent-green' },
-                { label: 'Volumen sem.', value: '~28 km', sub: 'estimado', color: 'accent-blue' },
-                { label: 'D+ acumulado', value: '0 m', sub: 'llano', color: 'accent-blue' },
-                { label: 'Semanas', value: '1 / 52', sub: '1.9% del plan', color: '#8B949E' },
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="bg-[#161B22] border border-[#21262D] rounded-lg p-3"
-                >
-                  <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-bold mb-1">
-                    {stat.label}
+            <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4 mb-6">
+              <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-3">MACROFASES — 52 SEMANAS</div>
+              <div className="flex h-2 rounded-full overflow-hidden gap-0.5 mb-4">
+                {phases.map((p) => (
+                  <div key={p.id} className="flex-1" style={{ background: p.active ? p.color : 'rgba(255,255,255,0.05)' }}></div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                {phases.map((p) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded flex-shrink-0" style={{ background: p.color }}></div>
+                    <span className="font-mono text-xs font-bold w-12" style={{ color: p.color }}>
+                      {p.id}
+                    </span>
+                    <span className="text-sm flex-1">{p.name}</span>
+                    {p.active && <span className="text-xs bg-[#3FB950]/10 text-[#3FB950] px-2 py-1 rounded">ACTIVA</span>}
+                    <span className="text-xs text-[#8B949E] font-mono">Sem {p.weeks}</span>
                   </div>
-                  <div className="font-mono text-lg font-bold text-[#E6EDF3]">{stat.value}</div>
-                  <div className="text-xs text-[#8B949E] mt-1">{stat.sub}</div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
             <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
-              <div className="text-xs uppercase letter-spacing-wider text-[#8B949E] font-bold mb-3">
-                Checkpoints
-              </div>
+              <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-4">CHECKPOINTS</div>
               <div className="space-y-3">
-                {[
-                  { id: 'CP1', name: 'Fin MF1 — Base establecida', date: '6 sep 2026', color: 'accent-blue' },
-                  { id: 'CP2', name: 'Fin MF2 — Aeróbico consolidado', date: '27 dic 2026', color: 'accent-green' },
-                  { id: 'CP3', name: 'Fin MF3 — Específico completado', date: '18 abr 2027', color: 'accent-orange' },
-                  { id: 'RACE', name: 'Ultra 80K · Sub 11h', date: '15 jun 2027', color: 'accent-purple' },
-                ].map((cp, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="text-xs font-mono font-bold border px-1 py-0.5 rounded text-accent-blue border-accent-blue flex-shrink-0 mt-0.5">
+                {checkpoints.map((cp) => (
+                  <div key={cp.id} className="flex items-start gap-3">
+                    <div className="text-xs font-mono font-bold border px-2 py-1 rounded flex-shrink-0" style={{ borderColor: cp.color, color: cp.color }}>
                       {cp.id}
                     </div>
                     <div>

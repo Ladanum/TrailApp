@@ -41,14 +41,13 @@ function App() {
   return (
     <div>
       <DashboardPro />
-    </div>
       <Toaster
         position="bottom-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#1f2937',
-            color: '#fff',
+            background: '#161B22',
+            color: '#E6EDF3',
           },
         }}
       />
