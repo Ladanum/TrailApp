@@ -529,7 +529,7 @@ function badgeClass(cat) {
 }
 
 function daysUntil(dateStr) {
-  const today = new Date('2026-06-15');
+  const today = new Date();
   const target = new Date(dateStr);
   return Math.ceil((target - today) / 86400000);
 }
@@ -819,7 +819,7 @@ function renderDashboard() {
   SESSIONS.forEach(s => {
     const done = !!state.completedDays[s.index];
     const data = state.workoutData[s.index];
-    const today = new Date('2026-06-15');
+    const today = new Date();
     const sessionDate = new Date(s.fullDate.split(', ')[1]);
     const isPast = today > sessionDate;
     const isToday = s.index === 0;
@@ -857,7 +857,7 @@ function renderDashboard() {
       top.appendChild(chk);
     } else {
       // Show red cross only if date has passed
-      const today = new Date('2026-06-15');
+      const today = new Date();
       const sessionDate = new Date(s.fullDate.split(', ')[1]); // Extract date from "Lunes, 15 jun 2026"
       if (today > sessionDate) {
         const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
