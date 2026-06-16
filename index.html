@@ -957,11 +957,37 @@ function renderDashboard() {
   resultsSection.appendChild(resultsScroll);
   wrap.appendChild(resultsSection);
 
+  // Calculate real weekly stats
+  let totalDistance = 0;
+  let totalElevation = 0;
+  let totalTime = 0;
+
+  SESSIONS.forEach(s => {
+    if (state.completedDays[s.index]) {
+      const data = state.workoutData[s.index];
+      if (data) {
+        totalDistance += parseFloat(data.distance) || 0;
+        totalElevation += parseInt(data.elevation) || 0;
+        totalTime += parseInt(data.duration) || 0;
+      }
+    }
+  });
+
+  state.extraActivities.forEach(act => {
+    totalDistance += parseFloat(act.data.distance) || 0;
+    totalElevation += parseInt(act.data.elevation) || 0;
+    totalTime += parseInt(act.duration) || 0;
+  });
+
+  const hours = Math.floor(totalTime / 60);
+  const mins = totalTime % 60;
+  const timeStr = hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
+
   // Stats
   const stats = el('div', { class: 'stat-grid' },
-    makeStatCard('Volumen sem.', '~28 km', '5h 25min estimado', '#E6EDF3'),
-    makeStatCard('D+ acumulado', '0 m', 'llano esta semana', '#E6EDF3'),
-    makeStatCard('Zona dominante', 'Z1 / Z2', 'base aeróbica', '#388BFD')
+    makeStatCard('Volumen sem.', totalDistance.toFixed(1) + ' km', 'distancia real', '#3FB950'),
+    makeStatCard('D+ acumulado', totalElevation + ' m', 'desnivel real', '#F0883E'),
+    makeStatCard('Tiempo total', timeStr, 'horas reales', '#388BFD')
   );
   wrap.appendChild(stats);
 
