@@ -499,7 +499,7 @@ const state = {
 };
 
 async function syncToSupabase() {
-  if (!state.userId || !window.supabaseClient) return;
+  if (!state.userId) return;
   try {
     const data = {
       user_id: state.userId,
@@ -510,10 +510,14 @@ async function syncToSupabase() {
       extra_activities: state.extraActivities,
       updated_at: new Date().toISOString()
     };
-    await window.supabaseClient
-      .from('user_data')
-      .upsert(data, { onConflict: 'user_id' });
-    console.log('✓ Synced to Supabase');
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (response.ok) {
+      console.log('✓ Synced to Supabase');
+    }
   } catch (e) {
     // Silently fail - app continues with localStorage
   }
@@ -1838,56 +1842,42 @@ function paintRaces() {
 async function loadFromSupabase() {
   if (!state.userId) return;
   try {
-    const { data, error } = await window.supabaseClient
-      .from('user_data')
-      .select('*')
-      .eq('user_id', state.userId)
-      .single();
+    const response = await fetch(`/api/sync?userId=${state.userId}`);
+    if (!response.ok) return;
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Load error:', error);
-      return;
-    }
-
-    if (data) {
-      state.completedDays = data.completed_days || {};
-      state.workoutData = data.workout_data || {};
-      state.progressData = data.progress_data || {};
-      state.raceData = data.race_data || {};
-      state.extraActivities = data.extra_activities || [];
+    const data = await response.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const record = data[0];
+      state.completedDays = record.completed_days || {};
+      state.workoutData = record.workout_data || {};
+      state.progressData = record.progress_data || {};
+      state.raceData = record.race_data || {};
+      state.extraActivities = record.extra_activities || [];
+      console.log('✓ Loaded from Supabase');
     }
   } catch (e) {
-    console.error('Load failed:', e);
+    // Silently fail - use localStorage
   }
 }
 
 async function initializeSupabase() {
-  // Try to initialize Supabase in background, don't block UI
-  if (window.supabase && window.supabase.createClient) {
-    try {
-      const { data: { user }, error } = await window.supabaseClient.auth.getUser();
-      if (!error && user) {
-        state.userId = user.id;
-        await loadFromSupabase();
-        console.log('✓ Authenticated with Supabase');
-      } else {
-        try {
-          const { data, error: anonError } = await window.supabaseClient.auth.signInAnonymously();
-          if (!anonError && data?.user) {
-            state.userId = data.user.id;
-            await loadFromSupabase();
-            console.log('✓ Anonymous Supabase auth successful');
-          }
-        } catch (e) {
-          console.warn('Anon auth failed, using localStorage only');
-        }
-      }
-    } catch (e) {
-      console.warn('Supabase connection failed, using localStorage only');
-    }
+  // Generate or load userId for cloud sync
+  let userId = localStorage.getItem('trailapp_userId');
+  if (!userId) {
+    userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    localStorage.setItem('trailapp_userId', userId);
+  }
+  state.userId = userId;
+
+  // Try to sync with Supabase in background, don't block UI
+  try {
+    await loadFromSupabase();
+    console.log('✓ Connected to cloud sync');
+  } catch (e) {
+    console.warn('Cloud sync unavailable, using localStorage only');
   }
 
-  // Always load and render (with or without Supabase)
+  // Always load and render (with or without cloud)
   paintDashboard();
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');

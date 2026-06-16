@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrailApp — Ultra 80K</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #0D1117; overflow: hidden; }
+body { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; color: #E6EDF3; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+button { cursor: pointer; font-family: inherit; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.fade-in { animation: fadeIn 0.18s ease; }
+
+.mono { font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace; }
+
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+/* SIDEBAR */
+#sidebar {
+  width: 220px; flex-shrink: 0;
+  background: #0D1117;
+  border-right: 1px solid #21262D;
+  display: flex; flex-direction: column;
+  transition: width 0.2s;
+}
+@media (max-width: 860px) {
+  #sidebar { width: 56px; }
+  .sb-label { display: none !important; }
+}
+
+.sb-brand {
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid #21262D;
+}
+.sb-app-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; color: #3FB950;
+  font-weight: 600; text-transform: uppercase; margin-bottom: 2px;
+}
+.sb-race-name { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 3px; }
+.sb-race-sub { font-family: monospace; font-size: 10px; color: #8B949E; }
+
+.sb-nav { padding: 10px 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.nav-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px 9px 18px;
+  background: transparent; border: none;
+  border-left: 2px solid transparent;
+  color: #8B949E; width: 100%; text-align: left;
+  font-size: 13px; font-weight: 400;
+  transition: background 0.1s, color 0.1s;
+}
+.nav-btn.active {
+  background: rgba(63,185,80,0.07);
+  border-left-color: #3FB950;
+  color: #E6EDF3; font-weight: 600;
+}
+.nav-btn:hover:not(.active) { background: rgba(255,255,255,0.03); color: #C9D1D9; }
+.nav-btn svg { flex-shrink: 0; }
+
+.sb-countdown {
+  padding: 16px 20px;
+  border-top: 1px solid #21262D;
+}
+.sb-countdown-label {
+  font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase;
+  color: #8B949E; margin-bottom: 5px; font-weight: 500;
+}
+.sb-countdown-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 38px; font-weight: 600; color: #3FB950;
+  line-height: 1; letter-spacing: -0.03em;
+}
+.sb-countdown-date { font-family: monospace; font-size: 10px; color: #8B949E; margin-top: 6px; }
+
+/* MAIN */
+#main { flex: 1; overflow-y: auto; padding: 32px 36px; min-width: 0; }
+
+/* CARDS */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat-card {
+  background: #161B22; border: 1px solid #21262D;
+  border-radius: 6px; padding: 14px;
+}
+.stat-label {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.11em;
+  color: #8B949E; margin-bottom: 4px; font-weight: 600;
+}
+.stat-val {
+  font-family: monospace; font-size: 20px; font-weight: 600;
+}
+.stat-sub { font-size: 10px; color: #8B949E; margin-top: 2px; }
+
+/* SESSION CARDS */
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(128px, 1fr));
+  gap: 8px; min-width: 700px;
+}
+.week-scroll { overflow-x: auto; margin-bottom: 20px; }
+.session-card {
+  background: #161B22; border: 1px solid #21262D;
+  border-radius: 8px; padding: 12px;
+  cursor: pointer; display: flex; flex-direction: column;
+  min-height: 168px;
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.session-card:hover { opacity: 0.82; }
+.session-card.today { border: 1.5px solid #3FB950; }
+.session-card.done { background: rgba(63,185,80,0.04); border-color: rgba(63,185,80,0.3); }
+
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.card-day { font-family: monospace; font-size: 10px; font-weight: 600; color: #8B949E; letter-spacing: 0.07em; }
+.card-date { font-family: monospace; font-size: 10px; color: #8B949E; margin-bottom: 9px; }
+.card-desc { font-size: 11px; color: #8B949E; margin-top: 8px; line-height: 1.45; flex: 1; }
+.card-bottom { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; }
+.card-dur { font-family: monospace; font-size: 11px; color: #E6EDF3; font-weight: 500; }
+
+/* BADGE */
+.badge {
+  border-radius: 4px; padding: 2px 8px; font-size: 10px;
+  font-weight: 600; letter-spacing: 0.06em; display: inline-block;
+  font-family: monospace;
+}
+.badge-zone  { background: rgba(56,139,253,0.14);  color: #388BFD; border: 1px solid rgba(56,139,253,0.28); }
+.badge-gym   { background: rgba(163,113,247,0.14); color: #A371F7; border: 1px solid rgba(163,113,247,0.28); }
+.badge-tl    { background: rgba(63,185,80,0.14);   color: #3FB950; border: 1px solid rgba(63,185,80,0.28); }
+.badge-rec   { background: rgba(139,148,158,0.14); color: #8B949E; border: 1px solid rgba(139,148,158,0.28); }
+.badge-quality { background: rgba(240,136,62,0.14); color: #F0883E; border: 1px solid rgba(240,136,62,0.28); }
+
+.alert-chip {
+  font-size: 9px; color: #F0883E;
+  background: rgba(240,136,62,0.1); border: 1px solid rgba(240,136,62,0.2);
+  border-radius: 3px; padding: 2px 5px; white-space: nowrap;
+}
+
+/* DETAIL VIEW */
+.back-btn {
+  background: none; border: none; color: #8B949E;
+  font-size: 13px; padding: 0; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 6px;
+}
+.back-btn:hover { color: #C9D1D9; }
+
+.detail-wrap { max-width: 680px; }
+.detail-date { font-family: monospace; font-size: 10px; color: #8B949E; letter-spacing: 0.13em; margin-bottom: 8px; text-transform: uppercase; }
+.detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.detail-title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.4; margin-bottom: 16px; }
+
+.info-card {
+  background: #161B22; border: 1px solid #21262D;
+  border-radius: 8px; padding: 16px; margin-bottom: 12px;
+}
+.info-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 6px; font-weight: 600; }
+.info-zone { font-family: monospace; font-size: 18px; font-weight: 600; color: #388BFD; margin-bottom: 10px; }
+.info-desc { font-size: 13px; color: #8B949E; line-height: 1.65; }
+
+.block-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.block-card { background: #161B22; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.block-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.block-id {
+  width: 24px; height: 24px;
+  background: rgba(163,113,247,0.15); border: 1px solid rgba(163,113,247,0.25);
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 11px; font-weight: 700; color: #A371F7; flex-shrink: 0;
+}
+.block-name { font-size: 13px; font-weight: 600; }
+.ex-table { display: grid; grid-template-columns: 1fr 40px 56px; }
+.ex-th {
+  font-size: 9px; text-transform: uppercase; color: #8B949E;
+  font-weight: 600; letter-spacing: 0.1em; padding-bottom: 8px;
+}
+.ex-th:not(:first-child) { text-align: right; }
+.ex-cell { font-size: 13px; color: #E6EDF3; padding: 9px 0; border-top: 1px solid #21262D; }
+.ex-sets { font-family: monospace; font-size: 12px; color: #A371F7; padding: 9px 0; border-top: 1px solid #21262D; text-align: right; }
+.ex-reps { font-family: monospace; font-size: 12px; color: #8B949E; padding: 9px 0; border-top: 1px solid #21262D; text-align: right; }
+
+.complete-btn {
+  width: 100%; padding: 13px; border-radius: 8px;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  border: 1px solid transparent;
+}
+.complete-btn.undone { background: #3FB950; border: 1px solid #3FB950; color: #0D1117; }
+.complete-btn.undone:hover { background: #52cb63; }
+.complete-btn.done-state { background: transparent; border: 1px solid rgba(63,185,80,0.5); color: #3FB950; }
+.complete-btn.done-state:hover { background: rgba(63,185,80,0.05); }
+
+/* PROGRESS */
+.prog-grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 20px; }
+.prog-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+.cal-wrap { background: #161B22; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.cal-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 12px; font-weight: 600; }
+.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+.cal-dow-cell { font-family: monospace; font-size: 9px; color: #8B949E; text-align: center; padding: 2px 0; }
+.cal-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 3px; font-family: monospace; font-size: 10px;
+  border: 1px solid transparent;
+}
+
+.cp-wrap { background: #161B22; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.cp-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 14px; font-weight: 600; }
+.cp-list { display: flex; flex-direction: column; gap: 14px; }
+.cp-item { display: flex; align-items: flex-start; gap: 10px; }
+.cp-badge {
+  min-width: 34px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 8px; font-weight: 700;
+  flex-shrink: 0; letter-spacing: 0.04em;
+}
+.cp-name { font-size: 12px; font-weight: 500; line-height: 1.3; }
+.cp-date { font-family: monospace; font-size: 10px; color: #8B949E; margin-top: 2px; }
+
+.phases-wrap { background: #161B22; border: 1px solid #21262D; border-radius: 8px; padding: 16px; }
+.phases-header { font-size: 9px; text-transform: uppercase; letter-spacing: 0.13em; color: #8B949E; margin-bottom: 12px; font-weight: 600; }
+.phases-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; gap: 2px; margin-bottom: 14px; }
+.phases-list { display: flex; flex-direction: column; gap: 10px; }
+.phase-row { display: flex; align-items: center; gap: 10px; }
+.phase-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.phase-id { font-family: monospace; font-size: 10px; font-weight: 600; width: 36px; }
+.phase-name { font-size: 12px; flex: 1; }
+.phase-active { font-size: 9px; color: #3FB950; background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.2); border-radius: 3px; padding: 1px 5px; letter-spacing: 0.05em; }
+.phase-weeks { font-family: monospace; font-size: 10px; color: #8B949E; }
+.phase-dates { font-size: 10px; color: #8B949E; }
+
+/* PLAN BAR */
+.plan-bar { background: #161B22; border: 1px solid #21262D; border-radius: 6px; padding: 11px 14px; margin-bottom: 18px; }
+.plan-bar-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.plan-bar-label { font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #8B949E; font-weight: 600; }
+.plan-bar-sem { font-family: monospace; font-size: 10px; color: #8B949E; }
+.plan-bar-track { height: 3px; background: #21262D; border-radius: 2px; margin-bottom: 7px; }
+.plan-bar-fill { height: 3px; width: 1.9%; background: #3FB950; border-radius: 2px; }
+.plan-bar-meta { display: flex; gap: 14px; font-size: 10px; color: #8B949E; flex-wrap: wrap; align-items: center; }
+
+/* MOUNTAIN SVG */
+.mountain-svg { display: block; margin: 0 0 16px; }
+
+/* PAGE HEADER */
+.page-eyebrow { font-family: monospace; font-size: 10px; color: #3FB950; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 5px; }
+.page-title { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: #8B949E; }
+
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.session-count-card { background: #161B22; border: 1px solid #21262D; border-radius: 8px; padding: 10px 16px; text-align: right; flex-shrink: 0; }
+.session-count-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: #8B949E; margin-bottom: 3px; font-weight: 500; }
+.session-count-val { font-family: monospace; font-size: 24px; font-weight: 600; color: #3FB950; line-height: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sb-brand sb-label">
+      <div class="sb-app-name">TRAILAPP</div>
+      <div class="sb-race-name">Ultra 80K</div>
+      <div class="sb-race-sub">Sub 11h · 15 jun 2027</div>
+    </div>
+    <div class="sb-nav">
+      <button class="nav-btn active" id="btn-dashboard" onclick="setView('dashboard')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="8.5" y="1" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="1" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+          <rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1.2" stroke="currentColor" stroke-width="1.3"></rect>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Dashboard</span>
+      </button>
+      <button class="nav-btn" id="btn-progress" onclick="setView('progress')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <path d="M1.5 11.5L5 7L8 9.5L13.5 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M1.5 13.5H13.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Progreso</span>
+      </button>
+    </div>
+    <div class="sb-countdown sb-label">
+      <div class="sb-countdown-label">Días hasta la carrera</div>
+      <div class="sb-countdown-num" id="days-count">365</div>
+      <div class="sb-countdown-date">15 jun 2027</div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main id="main">
+    <div id="view-dashboard" class="fade-in"></div>
+    <div id="view-session" class="fade-in" style="display:none"></div>
+    <div id="view-progress" class="fade-in" style="display:none"></div>
+  </main>
+</div>
+
+<script>
+// ─── SUPABASE CONFIG ─────────────────────────────────────────────────────────
+const supabase = supabase.createClient(
+  'https://bpaeznkkyzynfcnyhdrs.supabase.co',
+  'sb_publishable_OUa0FB2WRtJjpeGuNm_KLQ_Nhe0yHar'
+);
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const SESSIONS = [
+  {
+    index: 0, day: 'LUN', date: '15 jun', fullDate: 'Lunes, 15 jun 2026',
+    type: 'Z1', cat: 'zone',
+    description: 'Rodaje suave en llano. Primera salida — tobillo en observación total. Terreno liso.',
+    detail: 'FC objetivo: 60–68% FC máx. Percepción: muy fácil, conversación completamente fluida. Terreno completamente liso. Parar de inmediato ante cualquier molestia en tobillo.',
+    duration: '45 min', zone: 'Z1 · 60–68% FC', alert: true, blocks: null,
+  },
+  {
+    index: 1, day: 'MAR', date: '16 jun', fullDate: 'Martes, 16 jun 2026',
+    type: 'GYM', cat: 'gym',
+    description: 'Fuerza: Bloque A (Tobillo) + Bloque B (Core)',
+    detail: 'Fuerza preventiva y base. Ejecución controlada en todo momento, sin compensaciones posturales. Descanso 60–90s entre series.',
+    duration: '50 min', zone: null, alert: true,
+    blocks: [
+      { id: 'A', name: 'Bloque A — Tobillo', exercises: [
+        ['Elevación talón unipodal sin peso','3','15'],
+        ['Balance unipodal estático','3','30s'],
+        ['Monster walk con banda','3','15'],
+        ['Dorsiflexión con banda','3','15'],
+        ['Tibialis raise','3','15'],
+      ]},
+      { id: 'B', name: 'Bloque B — Core', exercises: [
+        ['Plancha frontal','3','45s'],
+        ['Plancha lateral con rotación','3','30s/lado'],
+        ['Pallof press con banda','3','12'],
+        ['Dead bug','3','8/lado'],
+        ['Hollow body hold','3','20s'],
+      ]},
+    ],
+  },
+  {
+    index: 2, day: 'MIÉ', date: '17 jun', fullDate: 'Miércoles, 17 jun 2026',
+    type: 'Z2', cat: 'zone',
+    description: 'Rodaje aeróbico base en llano. Ritmo cómodo, conversación fluida.',
+    detail: 'FC objetivo: 69–76% FC máx. Percepción: cómodo, pequeñas pausas en conversación. Terreno llano, ritmo constante durante toda la sesión.',
+    duration: '60 min', zone: 'Z2 · 69–76% FC', alert: false, blocks: null,
+  },
+  {
+    index: 3, day: 'JUE', date: '18 jun', fullDate: 'Jueves, 18 jun 2026',
+    type: 'REC', cat: 'rec',
+    description: 'Recuperación activa: Bloque E completo (movilidad)',
+    detail: 'Movilidad y recuperación activa. Sin carga cardiovascular. Ritmo de trabajo bajo, plena consciencia corporal. No forzar rangos de movimiento.',
+    duration: '25 min', zone: null, alert: false,
+    blocks: [
+      { id: 'E', name: 'Bloque E — Movilidad', exercises: [
+        ['Hip flexor stretch en arrodillado','3','45s/lado'],
+        ['Pigeon pose','3','60s/lado'],
+        ['Apertura de cadera tumbado','3','45s'],
+        ['Movilidad tobillo en pared','3','15/lado'],
+        ['Rotación torácica foam roller','3','60s'],
+      ]},
+    ],
+  },
+  {
+    index: 4, day: 'VIE', date: '19 jun', fullDate: 'Viernes, 19 jun 2026',
+    type: 'Z2', cat: 'zone',
+    description: 'Rodaje aeróbico base en llano.',
+    detail: 'FC objetivo: 69–76% FC máx. Mismo patrón que el miércoles. Terreno llano, ritmo constante.',
+    duration: '55 min', zone: 'Z2 · 69–76% FC', alert: false, blocks: null,
+  },
+  {
+    index: 5, day: 'SÁB', date: '20 jun', fullDate: 'Sábado, 20 jun 2026',
+    type: 'GYM', cat: 'gym',
+    description: 'Fuerza: Bloque C (Tren inferior) + Bloque D (Cadena posterior)',
+    detail: 'Sesión de fuerza de mayor intensidad. Técnica precisa en todos los movimientos. Descanso 90–120s entre series de carga.',
+    duration: '55 min', zone: null, alert: false,
+    blocks: [
+      { id: 'C', name: 'Bloque C — Tren Inferior', exercises: [
+        ['Sentadilla búlgara con mancuernas','3','10/lado'],
+        ['Step-up con carga','3','12/lado'],
+        ['Zancada caminando','3','12/lado'],
+        ['Sentadilla goblet','3','15'],
+        ['Hip thrust con barra','3','12'],
+      ]},
+      { id: 'D', name: 'Bloque D — Cadena Posterior', exercises: [
+        ['Peso muerto rumano con mancuernas','3','10'],
+        ['Good morning con barra','3','12'],
+        ['Curl de isquio en máquina','3','12'],
+        ['Superman hold','3','20s'],
+        ['Face pull con banda','3','15'],
+      ]},
+    ],
+  },
+  {
+    index: 6, day: 'DOM', date: '21 jun', fullDate: 'Domingo, 21 jun 2026',
+    type: 'TL', cat: 'tl',
+    description: 'Tirada larga Z1. Llano. Ritmo muy fácil todo el recorrido. Sin D+.',
+    detail: 'FC objetivo: 60–68% FC máx. Sesión más larga de la semana. Ritmo muy conservador durante todo el recorrido. Hidratación y nutrición desde el minuto 0. Terreno llano.',
+    duration: '75 min', zone: 'Z1 · 60–68% FC', alert: false, blocks: null,
+  },
+];
+
+const PHASES = [
+  { id: 'MF1', name: 'Recuperación y Base',   weeks: '1–12',  color: '#388BFD', r: 12/52, dates: '15 jun – 6 sep 2026',     active: true },
+  { id: 'MF2', name: 'Desarrollo Aeróbico',   weeks: '13–28', color: '#3FB950', r: 16/52, dates: '7 sep – 27 dic 2026',     active: false },
+  { id: 'MF3', name: 'Específico Ultra',       weeks: '29–44', color: '#F0883E', r: 16/52, dates: '28 dic 2026 – 18 abr 2027', active: false },
+  { id: 'MF4', name: 'Taper + Carrera',        weeks: '45–52', color: '#A371F7', r: 8/52,  dates: '19 abr – 15 jun 2027',   active: false },
+];
+
+const CPS = [
+  { id: 'CP1',  name: 'Fin MF1 — Base establecida',           date: '6 sep 2026',   color: '#388BFD' },
+  { id: 'CP2',  name: 'Fin MF2 — Aeróbico consolidado',       date: '27 dic 2026',  color: '#3FB950' },
+  { id: 'CP3',  name: 'Fin MF3 — Específico completado',      date: '18 abr 2027',  color: '#F0883E' },
+  { id: 'RACE', name: 'Ultra 80K · Sub 11h',                  date: '15 jun 2027',  color: '#A371F7' },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  view: 'dashboard',
+  selectedDay: null,
+  completedDays: JSON.parse(localStorage.getItem('trailapp_completed') || '{}'),
+};
+
+function saveState() {
+  localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function badgeClass(cat) {
+  return 'badge badge-' + cat;
+}
+
+function daysUntil(dateStr) {
+  const today = new Date('2026-06-15');
+  const target = new Date(dateStr);
+  return Math.ceil((target - today) / 86400000);
+}
+
+function completedCount() {
+  return Object.values(state.completedDays).filter(Boolean).length;
+}
+
+function el(tag, attrs, ...children) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of children) {
+    if (c == null) continue;
+    e.append(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(String(c)) : c);
+  }
+  return e;
+}
+
+// ─── VIEWS ───────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const wrap = document.createElement('div');
+
+  // Header row
+  const hdr = el('div', { class: 'header-row' },
+    el('div', {},
+      el('div', { class: 'page-eyebrow' }, 'MF1 · SEMANA 01 · MICROCICLO A'),
+      el('h1', { class: 'page-title' }, 'Dashboard Semanal'),
+      el('div', { class: 'page-sub' }, 'Recuperación y Base · 15–21 junio 2026')
+    ),
+    el('div', { class: 'session-count-card' },
+      el('div', { class: 'session-count-label' }, 'Sesiones completadas'),
+      el('div', { class: 'session-count-val' }, completedCount() + '/7')
+    )
+  );
+  wrap.appendChild(hdr);
+
+  // Mountain divider
+  const mtn = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  mtn.setAttribute('viewBox', '0 0 900 18'); mtn.setAttribute('width', '100%');
+  mtn.setAttribute('height', '18'); mtn.setAttribute('preserveAspectRatio', 'none');
+  mtn.style.cssText = 'display:block;margin:0 0 16px';
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M0,18 L40,14 L80,8 L120,13 L165,3 L210,11 L255,7 L300,13 L345,2 L395,10 L440,15 L490,5 L540,12 L595,1 L645,9 L700,14 L750,6 L800,12 L850,4 L900,18');
+  path.setAttribute('stroke', '#3FB950'); path.setAttribute('stroke-width', '1');
+  path.setAttribute('fill', 'none'); path.setAttribute('stroke-opacity', '0.22');
+  mtn.appendChild(path);
+  wrap.appendChild(mtn);
+
+  // Plan bar
+  const pb = el('div', { class: 'plan-bar' },
+    el('div', { class: 'plan-bar-top' },
+      el('span', { class: 'plan-bar-label' }, 'Plan 52 semanas'),
+      el('span', { class: 'plan-bar-sem' }, 'SEM 01 / 52')
+    ),
+    el('div', { class: 'plan-bar-track' }, el('div', { class: 'plan-bar-fill' })),
+    el('div', { class: 'plan-bar-meta' },
+      el('span', {}, el('span', { style: 'color:#388BFD' }, '●') , ' MF1 activa'),
+      el('span', {}, 'CP1: 6 sep 2026'),
+      el('span', {}, 'CP2: 27 dic 2026'),
+      el('span', {}, 'CP3: 18 abr 2027'),
+      el('span', {}, 'RACE: 15 jun 2027')
+    )
+  );
+  wrap.appendChild(pb);
+
+  // Session cards
+  const scroll = el('div', { class: 'week-scroll' });
+  const grid = el('div', { class: 'week-grid' });
+  SESSIONS.forEach(s => {
+    const done = !!state.completedDays[s.index];
+    const card = el('div', { class: 'session-card' + (s.index === 0 ? ' today' : '') + (done ? ' done' : '') });
+    card.addEventListener('click', () => openSession(s.index));
+
+    const top = el('div', { class: 'card-top' },
+      el('div', { class: 'card-day' }, s.day)
+    );
+    if (done) {
+      const chk = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      chk.setAttribute('width', '14'); chk.setAttribute('height', '14'); chk.setAttribute('viewBox', '0 0 14 14');
+      chk.innerHTML = '<circle cx="7" cy="7" r="6" fill="rgba(63,185,80,0.18)"/><path d="M4.5 7L6.5 9L9.5 4.5" stroke="#3FB950" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+      top.appendChild(chk);
+    }
+    card.appendChild(top);
+    card.appendChild(el('div', { class: 'card-date' }, s.date));
+    card.appendChild(el('span', { class: badgeClass(s.cat) }, s.type));
+    card.appendChild(el('div', { class: 'card-desc' }, s.description));
+    const bot = el('div', { class: 'card-bottom' }, el('span', { class: 'card-dur' }, s.duration));
+    if (s.alert) bot.appendChild(el('span', { class: 'alert-chip' }, 'tobillo'));
+    card.appendChild(bot);
+    grid.appendChild(card);
+  });
+  scroll.appendChild(grid);
+  wrap.appendChild(scroll);
+
+  // Stats
+  const stats = el('div', { class: 'stat-grid' },
+    makeStatCard('Volumen sem.', '~28 km', '5h 25min estimado', '#E6EDF3'),
+    makeStatCard('D+ acumulado', '0 m', 'llano esta semana', '#E6EDF3'),
+    makeStatCard('Zona dominante', 'Z1 / Z2', 'base aeróbica', '#388BFD')
+  );
+  wrap.appendChild(stats);
+
+  return wrap;
+}
+
+function makeStatCard(label, val, sub, color) {
+  return el('div', { class: 'stat-card' },
+    el('div', { class: 'stat-label' }, label),
+    el('div', { class: 'stat-val', style: 'color:' + color }, val),
+    el('div', { class: 'stat-sub' }, sub)
+  );
+}
+
+function renderSession(idx) {
+  const s = SESSIONS[idx];
+  const done = !!state.completedDays[s.index];
+  const wrap = el('div', { class: 'detail-wrap' });
+
+  // Back
+  const back = el('button', { class: 'back-btn' });
+  const bsv = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  bsv.setAttribute('width','16'); bsv.setAttribute('height','16'); bsv.setAttribute('viewBox','0 0 16 16');
+  bsv.innerHTML = '<path d="M10 3L5 8L10 13" stroke="#8B949E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  back.appendChild(bsv); back.append('Volver al dashboard');
+  back.addEventListener('click', () => setView('dashboard'));
+  wrap.appendChild(back);
+
+  wrap.appendChild(el('div', { class: 'detail-date' }, s.fullDate));
+  const meta = el('div', { class: 'detail-meta' },
+    el('span', { class: badgeClass(s.cat) }, s.type),
+    el('span', { style: 'font-family:monospace;font-size:12px;color:#8B949E' }, s.duration)
+  );
+  if (s.alert) meta.appendChild(el('span', { style: 'font-size:11px;color:#F0883E;background:rgba(240,136,62,0.1);border:1px solid rgba(240,136,62,0.2);border-radius:4px;padding:2px 8px;font-family:monospace' }, '⚠ tobillo'));
+  wrap.appendChild(meta);
+  wrap.appendChild(el('h1', { class: 'detail-title' }, s.description));
+
+  // Info card
+  const info = el('div', { class: 'info-card' });
+  if (s.zone) {
+    info.appendChild(el('div', { class: 'info-label' }, 'Zona objetivo'));
+    info.appendChild(el('div', { class: 'info-zone' }, s.zone));
+  } else {
+    info.appendChild(el('div', { class: 'info-label' }, 'Protocolo'));
+  }
+  info.appendChild(el('div', { class: 'info-desc' }, s.detail));
+  wrap.appendChild(info);
+
+  // Blocks
+  if (s.blocks) {
+    const bl = el('div', { class: 'block-list' });
+    s.blocks.forEach(b => {
+      const bc = el('div', { class: 'block-card' });
+      bc.appendChild(el('div', { class: 'block-header' },
+        el('div', { class: 'block-id' }, b.id),
+        el('div', { class: 'block-name' }, b.name)
+      ));
+      const tbl = el('div', { class: 'ex-table' },
+        el('div', { class: 'ex-th' }, 'Ejercicio'),
+        el('div', { class: 'ex-th', style: 'text-align:right' }, 'Ser.'),
+        el('div', { class: 'ex-th', style: 'text-align:right' }, 'Reps')
+      );
+      b.exercises.forEach(([name, sets, reps]) => {
+        tbl.appendChild(el('div', { class: 'ex-cell' }, name));
+        tbl.appendChild(el('div', { class: 'ex-sets' }, sets));
+        tbl.appendChild(el('div', { class: 'ex-reps' }, reps));
+      });
+      bc.appendChild(tbl);
+      bl.appendChild(bc);
+    });
+    wrap.appendChild(bl);
+  }
+
+  // Complete button
+  const btn = el('button', { class: 'complete-btn ' + (done ? 'done-state' : 'undone') });
+  btn.textContent = done ? '✓ Sesión completada — clic para desmarcar' : 'Marcar como completada';
+  btn.addEventListener('click', () => {
+    state.completedDays[s.index] = !state.completedDays[s.index];
+    saveState();
+    openSession(idx);
+  });
+  wrap.appendChild(btn);
+  return wrap;
+}
+
+function renderProgress() {
+  const done = completedCount();
+  const wrap = document.createElement('div');
+
+  wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
+    el('div', { class: 'page-eyebrow' }, 'MF1 · PROGRESO'),
+    el('h1', { class: 'page-title' }, 'Progreso'),
+    el('div', { class: 'page-sub' }, 'Semana 1 de 52 · Plan Ultra 80K')
+  ));
+
+  // Stats
+  const statItems = [
+    { l: 'Sesiones OK', v: done + ' / 7', s: 'esta semana', c: '#3FB950' },
+    { l: 'Volumen sem.', v: '~28 km', s: 'estimado', c: '#388BFD' },
+    { l: 'D+ acumulado', v: '0 m', s: 'llano', c: '#388BFD' },
+    { l: 'Semanas', v: '1 / 52', s: '1.9% del plan', c: '#8B949E' },
+  ];
+  const sg = el('div', { class: 'prog-grid4' });
+  statItems.forEach(x => sg.appendChild(makeStatCard(x.l, x.v, x.s, x.c)));
+  wrap.appendChild(sg);
+
+  // Calendar + checkpoints
+  const g2 = el('div', { class: 'prog-grid2' });
+
+  // Calendar
+  const cal = el('div', { class: 'cal-wrap' },
+    el('div', { class: 'cal-header' }, 'JUNIO 2026')
+  );
+  const dow = el('div', { class: 'cal-dow' });
+  ['L','M','X','J','V','S','D'].forEach(d => dow.appendChild(el('div', { class: 'cal-dow-cell' }, d)));
+  cal.appendChild(dow);
+  const days = el('div', { class: 'cal-days' });
+  for (let d = 1; d <= 30; d++) {
+    const inWeek = d >= 15 && d <= 21;
+    const dayIdx = inWeek ? d - 15 : null;
+    const isDone = dayIdx !== null && !!state.completedDays[dayIdx];
+    const isToday = d === 15;
+    const dc = el('div', { class: 'cal-day' }, String(d));
+    dc.style.background = isDone ? 'rgba(63,185,80,0.2)' : 'transparent';
+    dc.style.border = isToday ? '1px solid #3FB950' : (inWeek ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent');
+    dc.style.color = isDone ? '#3FB950' : (inWeek ? '#E6EDF3' : 'rgba(139,148,158,0.4)');
+    dc.style.fontWeight = isToday ? '700' : '400';
+    days.appendChild(dc);
+  }
+  cal.appendChild(days);
+  g2.appendChild(cal);
+
+  // Checkpoints
+  const cpWrap = el('div', { class: 'cp-wrap' }, el('div', { class: 'cp-header' }, 'CHECKPOINTS'));
+  const cpList = el('div', { class: 'cp-list' });
+  CPS.forEach(cp => {
+    const badge = el('div', { class: 'cp-badge' }, cp.id);
+    badge.style.border = '1px solid ' + cp.color;
+    badge.style.color = cp.color;
+    const info = el('div', {},
+      el('div', { class: 'cp-name' }, cp.name),
+      el('div', { class: 'cp-date' }, cp.date)
+    );
+    cpList.appendChild(el('div', { class: 'cp-item' }, badge, info));
+  });
+  cpWrap.appendChild(cpList);
+  g2.appendChild(cpWrap);
+  wrap.appendChild(g2);
+
+  // Phases bar
+  const ph = el('div', { class: 'phases-wrap' },
+    el('div', { class: 'phases-header' }, 'MACROFASES — 52 SEMANAS')
+  );
+  const bar = el('div', { class: 'phases-bar' });
+  PHASES.forEach(p => {
+    const seg = document.createElement('div');
+    seg.style.cssText = 'flex:' + p.r + ';background:' + (p.active ? p.color : 'rgba(255,255,255,0.05)');
+    bar.appendChild(seg);
+  });
+  ph.appendChild(bar);
+  const pl = el('div', { class: 'phases-list' });
+  PHASES.forEach(p => {
+    const row = el('div', { class: 'phase-row' });
+    const dot = el('div', { class: 'phase-dot' });
+    dot.style.background = p.color;
+    const pid = el('div', { class: 'phase-id', style: 'color:' + p.color }, p.id);
+    const pname = el('div', { class: 'phase-name', style: 'color:' + (p.active ? '#E6EDF3' : '#8B949E') }, p.name);
+    row.append(dot, pid, pname);
+    if (p.active) row.appendChild(el('span', { class: 'phase-active' }, 'ACTIVA'));
+    row.appendChild(el('span', { class: 'phase-weeks' }, 'Sem ' + p.weeks));
+    row.appendChild(el('span', { class: 'phase-dates' }, '· ' + p.dates));
+    pl.appendChild(row);
+  });
+  ph.appendChild(pl);
+  wrap.appendChild(ph);
+
+  return wrap;
+}
+
+// ─── ROUTING ─────────────────────────────────────────────────────────────────
+function setView(view) {
+  state.view = view;
+  state.selectedDay = null;
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? '' : 'none';
+  document.getElementById('view-session').style.display   = view === 'session'   ? '' : 'none';
+  document.getElementById('view-progress').style.display  = view === 'progress'  ? '' : 'none';
+  document.getElementById('btn-dashboard').classList.toggle('active', view === 'dashboard' || view === 'session');
+  document.getElementById('btn-progress').classList.toggle('active', view === 'progress');
+  if (view === 'dashboard') paintDashboard();
+  if (view === 'progress')  paintProgress();
+  localStorage.setItem('trailapp_view', view);
+}
+
+function openSession(idx) {
+  state.view = 'session';
+  state.selectedDay = idx;
+  document.getElementById('view-dashboard').style.display = 'none';
+  document.getElementById('view-progress').style.display  = 'none';
+  const v = document.getElementById('view-session');
+  v.style.display = '';
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderSession(idx));
+  document.getElementById('btn-dashboard').classList.add('active');
+  document.getElementById('btn-progress').classList.remove('active');
+}
+
+function paintDashboard() {
+  const v = document.getElementById('view-dashboard');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderDashboard());
+}
+
+function paintProgress() {
+  const v = document.getElementById('view-progress');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderProgress());
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+document.getElementById('days-count').textContent = daysUntil('2027-06-15');
+
+// Restore saved view
+const savedView = localStorage.getItem('trailapp_view') || 'dashboard';
+paintDashboard();
+paintProgress();
+setView(savedView);
+if (savedView === 'session') setView('dashboard');
+</script>
+</body>
+</html>

@@ -15,6 +15,31 @@ CREATE TABLE IF NOT EXISTS public.macrophases (
   created_at TIMESTAMP DEFAULT now()
 );
 
+-- Planned Workouts (Microcycles - what should be done)
+CREATE TABLE IF NOT EXISTS public.planned_workouts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMP DEFAULT now(),
+  date DATE NOT NULL,
+  week_number INTEGER NOT NULL,
+  day_of_week TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  planned_distance_km DECIMAL(5,2),
+  planned_duration_minutes INTEGER,
+  planned_elevation_gain INTEGER DEFAULT 0,
+  planned_zone TEXT,
+  planned_intensity TEXT,
+  planned_surface TEXT DEFAULT 'trail',
+  workout_type TEXT,
+  macrophase_id UUID REFERENCES public.macrophases(id),
+  completed BOOLEAN DEFAULT false,
+  UNIQUE(date, macrophase_id)
+);
+
+CREATE INDEX IF NOT EXISTS planned_workouts_date ON public.planned_workouts(date DESC);
+CREATE INDEX IF NOT EXISTS planned_workouts_week ON public.planned_workouts(week_number);
+CREATE INDEX IF NOT EXISTS planned_workouts_completed ON public.planned_workouts(completed);
+
 -- Workouts
 CREATE TABLE IF NOT EXISTS public.workouts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
