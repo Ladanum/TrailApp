@@ -884,13 +884,25 @@ function renderDashboard() {
   const resultsScroll = el('div', { class: 'week-scroll' });
   const resultsGrid = el('div', { class: 'week-grid' });
 
-  // Create a map of extra activities by date
+  // Create a map of extra activities by date (ISO format YYYY-MM-DD)
   const extrasMap = {};
   state.extraActivities.forEach(act => {
-    const dateStr = new Date(act.date).toLocaleDateString('es-ES', {month:'short', day:'numeric'});
-    if (!extrasMap[dateStr]) extrasMap[dateStr] = [];
-    extrasMap[dateStr].push(act);
+    // act.date is already in ISO format (YYYY-MM-DD from input)
+    if (!extrasMap[act.date]) extrasMap[act.date] = [];
+    extrasMap[act.date].push(act);
   });
+
+  // Helper to convert session fullDate to ISO format
+  const getSessionISODate = (fullDate) => {
+    const parts = fullDate.match(/(\d+)\s+(\w+)\s+(\d{4})/);
+    if (!parts) return null;
+    const day = parts[1];
+    const monthStr = parts[2];
+    const year = parts[3];
+    const months = {jun: '06', sep: '09', oct: '10', dic: '12', nov: '11', ene: '01', feb: '02', mar: '03', abr: '04', may: '05'};
+    const month = months[monthStr] || '06';
+    return `${year}-${month}-${day.padStart(2, '0')}`;
+  };
 
   // Render sessions with their extra activities
   SESSIONS.forEach(s => {
@@ -916,8 +928,9 @@ function renderDashboard() {
 
     resultsGrid.appendChild(card);
 
-    // Add extra activities for this day
-    const extrasForDay = extrasMap[s.date];
+    // Add extra activities for this day (match by ISO date)
+    const sessionISODate = getSessionISODate(s.fullDate);
+    const extrasForDay = sessionISODate ? extrasMap[sessionISODate] : null;
     if (extrasForDay) {
       extrasForDay.forEach(act => {
         const extraCard = el('div', { class: 'session-card done', style: 'opacity:0.9;margin-left:8px' });
