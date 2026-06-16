@@ -917,8 +917,7 @@ function renderDashboard() {
   resultsSection.appendChild(resultsScroll);
   wrap.appendChild(resultsSection);
 
-  // Store extras section for later (after stats)
-  let extrasSection = null;
+  // Extra Activities section (right after results)
   if (state.extraActivities.length > 0) {
     extrasSection = el('div', {});
     extrasSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Actividades Extra'));
@@ -955,6 +954,7 @@ function renderDashboard() {
 
     extrasScroll.appendChild(extrasGrid);
     extrasSection.appendChild(extrasScroll);
+    wrap.appendChild(extrasSection);
   }
 
   // Calculate planned weekly stats (week 1)
@@ -1010,11 +1010,6 @@ function renderDashboard() {
     makeStatCard('Tiempo total', timeStr, 'horas reales', '#388BFD')
   );
   wrap.appendChild(stats);
-
-  // Add extras section after stats
-  if (extrasSection) {
-    wrap.appendChild(extrasSection);
-  }
 
   return wrap;
 }
