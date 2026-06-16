@@ -899,6 +899,10 @@ function renderDashboard() {
       if (data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, data.distance + ' km'));
       if (data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
       if (data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, data.elevation + ' m'));
+      if (data.distance && data.duration && (s.cat === 'zone' || s.cat === 'tl')) {
+        const ritmoMedio = (data.duration / data.distance).toFixed(2);
+        metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
+      }
       if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
       if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
       card.appendChild(metricsDiv);
