@@ -878,11 +878,21 @@ function renderDashboard() {
   scroll.appendChild(grid);
   wrap.appendChild(scroll);
 
-  // Results week
+  // Results week - group by date
   const resultsSection = el('div', {});
   resultsSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Resultados Reales'));
   const resultsScroll = el('div', { class: 'week-scroll' });
   const resultsGrid = el('div', { class: 'week-grid' });
+
+  // Create a map of extra activities by date
+  const extrasMap = {};
+  state.extraActivities.forEach(act => {
+    const dateStr = new Date(act.date).toLocaleDateString('es-ES', {month:'short', day:'numeric'});
+    if (!extrasMap[dateStr]) extrasMap[dateStr] = [];
+    extrasMap[dateStr].push(act);
+  });
+
+  // Render sessions with their extra activities
   SESSIONS.forEach(s => {
     const done = !!state.completedDays[s.index];
     const data = state.workoutData[s.index];
@@ -905,28 +915,30 @@ function renderDashboard() {
     }
 
     resultsGrid.appendChild(card);
-  });
 
-  // Add extra activities to results (sorted by date)
-  const sortedExtras = [...state.extraActivities].sort((a, b) => new Date(a.date) - new Date(b.date));
-  sortedExtras.forEach(act => {
-    const card = el('div', { class: 'session-card done', style: 'opacity:0.9' });
-    const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day', style: 'font-size:9px' }, '⭐ EXTRA'));
-    card.appendChild(top);
-    card.appendChild(el('div', { class: 'card-date' }, new Date(act.date).toLocaleDateString('es-ES', {month:'short', day:'numeric'})));
-    card.appendChild(el('span', { class: 'badge badge-quality' }, act.type.toUpperCase()));
-    card.appendChild(el('div', { class: 'card-desc' }, act.name));
-    const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
-    if (act.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, act.data.distance + ' km'));
-    if (act.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, act.duration + ' min'));
-    if (act.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, act.data.elevation + ' m'));
-    if (act.data.distance && act.duration && act.type === 'running') {
-      const ritmoMedio = (act.duration / act.data.distance).toFixed(2);
-      metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
+    // Add extra activities for this day
+    const extrasForDay = extrasMap[s.date];
+    if (extrasForDay) {
+      extrasForDay.forEach(act => {
+        const extraCard = el('div', { class: 'session-card done', style: 'opacity:0.9;margin-left:8px' });
+        const extraTop = el('div', { class: 'card-top' }, el('div', { class: 'card-day', style: 'font-size:9px' }, '⭐ EXTRA'));
+        extraCard.appendChild(extraTop);
+        extraCard.appendChild(el('div', { class: 'card-date' }, s.date));
+        extraCard.appendChild(el('span', { class: 'badge badge-quality' }, act.type.toUpperCase()));
+        extraCard.appendChild(el('div', { class: 'card-desc' }, act.name));
+        const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
+        if (act.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, act.data.distance + ' km'));
+        if (act.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, act.duration + ' min'));
+        if (act.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, act.data.elevation + ' m'));
+        if (act.data.distance && act.duration && act.type === 'running') {
+          const ritmoMedio = (act.duration / act.data.distance).toFixed(2);
+          metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
+        }
+        if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
+        extraCard.appendChild(metricsDiv);
+        resultsGrid.appendChild(extraCard);
+      });
     }
-    if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
-    card.appendChild(metricsDiv);
-    resultsGrid.appendChild(card);
   });
 
   resultsScroll.appendChild(resultsGrid);
