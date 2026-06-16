@@ -2112,12 +2112,12 @@ async function loadFromSupabase() {
     const data = await response.json();
     if (!data) return;
 
-    // Merge cloud data with local
-    if (data.completed_days) state.completedDays = { ...state.completedDays, ...data.completed_days };
-    if (data.workout_data) state.workoutData = { ...state.workoutData, ...data.workout_data };
-    if (data.progress_data) state.progressData = { ...state.progressData, ...data.progress_data };
-    if (data.race_data) state.raceData = data.race_data || state.raceData;
-    if (data.extra_activities) state.extraActivities = data.extra_activities || state.extraActivities;
+    // Cloud data is source of truth - completely replace local
+    if (data.completed_days) state.completedDays = data.completed_days;
+    if (data.workout_data) state.workoutData = data.workout_data;
+    if (data.progress_data) state.progressData = data.progress_data;
+    if (data.race_data) state.raceData = data.race_data;
+    if (data.extra_activities) state.extraActivities = data.extra_activities;
 
     // Save to localStorage
     localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
