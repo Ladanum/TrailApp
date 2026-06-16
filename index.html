@@ -2149,6 +2149,20 @@ async function initializeSupabase() {
 
   // Sync to cloud every 60 seconds
   setInterval(syncToSupabase, 60000);
+
+  // Load from cloud every 60 seconds
+  setInterval(async () => {
+    await loadFromSupabase();
+    paintDashboard();
+    paintProgress();
+  }, 60000);
+
+  // Also reload when page regains focus
+  window.addEventListener('focus', async () => {
+    await loadFromSupabase();
+    paintDashboard();
+    paintProgress();
+  });
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
