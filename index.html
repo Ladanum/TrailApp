@@ -923,8 +923,9 @@ function renderDashboard() {
     resultsGrid.appendChild(card);
   });
 
-  // Add extra activities to results
-  state.extraActivities.forEach(act => {
+  // Add extra activities to results (sorted by date)
+  const sortedExtras = [...state.extraActivities].sort((a, b) => new Date(a.date) - new Date(b.date));
+  sortedExtras.forEach(act => {
     const card = el('div', { class: 'session-card done', style: 'opacity:0.9' });
     const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day', style: 'font-size:9px' }, '⭐ EXTRA'));
     card.appendChild(top);
@@ -935,6 +936,10 @@ function renderDashboard() {
     if (act.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, act.data.distance + ' km'));
     if (act.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, act.duration + ' min'));
     if (act.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, act.data.elevation + ' m'));
+    if (act.data.distance && act.duration && act.type === 'running') {
+      const ritmoMedio = (act.duration / act.data.distance).toFixed(2);
+      metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
+    }
     if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
     card.appendChild(metricsDiv);
     resultsGrid.appendChild(card);
