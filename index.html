@@ -888,9 +888,11 @@ function renderDashboard() {
   const extrasMap = {};
   state.extraActivities.forEach(act => {
     // act.date is already in ISO format (YYYY-MM-DD from input)
+    console.log('Extra activity:', act.name, 'date:', act.date);
     if (!extrasMap[act.date]) extrasMap[act.date] = [];
     extrasMap[act.date].push(act);
   });
+  console.log('Extras map:', extrasMap);
 
   // Helper to convert session fullDate to ISO format
   const getSessionISODate = (fullDate) => {
@@ -901,7 +903,9 @@ function renderDashboard() {
     const year = parts[3];
     const months = {jun: '06', sep: '09', oct: '10', dic: '12', nov: '11', ene: '01', feb: '02', mar: '03', abr: '04', may: '05'};
     const month = months[monthStr] || '06';
-    return `${year}-${month}-${day.padStart(2, '0')}`;
+    const isoDate = `${year}-${month}-${day.padStart(2, '0')}`;
+    console.log('Session fullDate:', fullDate, '→ ISO:', isoDate);
+    return isoDate;
   };
 
   // Render sessions with their extra activities
