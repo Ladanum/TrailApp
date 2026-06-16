@@ -19,6 +19,8 @@ export default async function handler(req, res) {
       }
 
       const url = `${supabaseUrl}/rest/v1/user_data?user_id=eq.${encodeURIComponent(userId)}`;
+      console.log('Fetching:', url);
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -28,7 +30,9 @@ export default async function handler(req, res) {
         }
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
       return res.status(response.status).json(data);
     } else if (req.method === 'POST') {
       // Upsert data
@@ -53,6 +57,10 @@ export default async function handler(req, res) {
     }
   } catch (error) {
     console.error('Sync error:', error);
-    return res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({
+      error: error.message || 'Internal server error',
+      details: error.toString(),
+      stack: error.stack
+    });
   }
 }
