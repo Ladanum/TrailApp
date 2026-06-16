@@ -499,28 +499,8 @@ const state = {
 };
 
 async function syncToSupabase() {
-  if (!state.userId) return;
-  try {
-    const data = {
-      user_id: state.userId,
-      completed_days: state.completedDays,
-      workout_data: state.workoutData,
-      progress_data: state.progressData,
-      race_data: state.raceData,
-      extra_activities: state.extraActivities,
-      updated_at: new Date().toISOString()
-    };
-    const response = await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (response.ok) {
-      console.log('✓ Synced to Supabase');
-    }
-  } catch (e) {
-    // Silently fail - app continues with localStorage
-  }
+  // Sync disabled for now - using localStorage only
+  // Data is automatically saved to browser storage
 }
 
 function saveState() {
@@ -1840,44 +1820,13 @@ function paintRaces() {
 }
 
 async function loadFromSupabase() {
-  if (!state.userId) return;
-  try {
-    const response = await fetch(`/api/sync?userId=${state.userId}`);
-    if (!response.ok) return;
-
-    const data = await response.json();
-    if (Array.isArray(data) && data.length > 0) {
-      const record = data[0];
-      state.completedDays = record.completed_days || {};
-      state.workoutData = record.workout_data || {};
-      state.progressData = record.progress_data || {};
-      state.raceData = record.race_data || {};
-      state.extraActivities = record.extra_activities || [];
-      console.log('✓ Loaded from Supabase');
-    }
-  } catch (e) {
-    // Silently fail - use localStorage
-  }
+  // Cloud sync disabled - using localStorage only
 }
 
-async function initializeSupabase() {
-  // Generate or load userId for cloud sync
-  let userId = localStorage.getItem('trailapp_userId');
-  if (!userId) {
-    userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-    localStorage.setItem('trailapp_userId', userId);
-  }
-  state.userId = userId;
+function initializeSupabase() {
+  // Initialize app with localStorage
+  // Data persists in browser storage automatically
 
-  // Try to sync with Supabase in background, don't block UI
-  try {
-    await loadFromSupabase();
-    console.log('✓ Connected to cloud sync');
-  } catch (e) {
-    console.warn('Cloud sync unavailable, using localStorage only');
-  }
-
-  // Always load and render (with or without cloud)
   paintDashboard();
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');
