@@ -499,7 +499,7 @@ const state = {
 };
 
 async function syncToSupabase() {
-  if (!state.userId) return;
+  if (!state.userId || !window.supabaseClient) return;
   try {
     const data = {
       user_id: state.userId,
@@ -510,12 +510,12 @@ async function syncToSupabase() {
       extra_activities: state.extraActivities,
       updated_at: new Date().toISOString()
     };
-    const { error } = await window.supabaseClient
+    await window.supabaseClient
       .from('user_data')
       .upsert(data, { onConflict: 'user_id' });
-    if (error) console.error('Sync error:', error);
+    console.log('✓ Synced to Supabase');
   } catch (e) {
-    console.error('Sync failed:', e);
+    // Silently fail - app continues with localStorage
   }
 }
 
@@ -1862,31 +1862,32 @@ async function loadFromSupabase() {
 }
 
 async function initializeSupabase() {
-  try {
-    if (!window.supabase || !window.supabase.createClient) {
-      throw new Error('Supabase not loaded');
-    }
-
-    const { data: { user }, error } = await window.supabaseClient.auth.getUser();
-    if (!error && user) {
-      state.userId = user.id;
-      await loadFromSupabase();
-    } else {
-      try {
-        const { data, error: anonError } = await window.supabaseClient.auth.signInAnonymously();
-        if (!anonError && data?.user) {
-          state.userId = data.user.id;
-          await loadFromSupabase();
+  // Try to initialize Supabase in background, don't block UI
+  if (window.supabase && window.supabase.createClient) {
+    try {
+      const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+      if (!error && user) {
+        state.userId = user.id;
+        await loadFromSupabase();
+        console.log('✓ Authenticated with Supabase');
+      } else {
+        try {
+          const { data, error: anonError } = await window.supabaseClient.auth.signInAnonymously();
+          if (!anonError && data?.user) {
+            state.userId = data.user.id;
+            await loadFromSupabase();
+            console.log('✓ Anonymous Supabase auth successful');
+          }
+        } catch (e) {
+          console.warn('Anon auth failed, using localStorage only');
         }
-      } catch (e) {
-        console.warn('Anon auth failed:', e);
       }
+    } catch (e) {
+      console.warn('Supabase connection failed, using localStorage only');
     }
-  } catch (e) {
-    console.warn('Supabase init failed, using localStorage only:', e);
   }
 
-  // Always load and render
+  // Always load and render (with or without Supabase)
   paintDashboard();
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');
