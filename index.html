@@ -641,6 +641,20 @@ function renderExtraActivityModal() {
     typeSelect
   ));
 
+  // Training zone
+  const zoneSelect = el('select', { style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' },
+    el('option', { value: '' }, '— Sin zona específica —'),
+    el('option', { value: 'Z1' }, 'Z1 (60–68% FC) · Rodaje suave'),
+    el('option', { value: 'Z2' }, 'Z2 (69–76% FC) · Aeróbica base'),
+    el('option', { value: 'Z3' }, 'Z3 (77–84% FC) · Umbral aeróbico'),
+    el('option', { value: 'Z4' }, 'Z4 (85–92% FC) · Umbral anaeróbico'),
+    el('option', { value: 'Z5' }, 'Z5 (93–100% FC) · Máxima intensidad')
+  );
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em' }, 'Zona de Entrenamiento'),
+    zoneSelect
+  ));
+
   // Activity name
   const nameInput = el('input', { type: 'text', placeholder: 'ej: Trail en La Pera, Piscina, Ciclismo', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px' });
   form.appendChild(el('div', { style: 'margin-bottom:16px' },
@@ -703,6 +717,7 @@ function renderExtraActivityModal() {
   saveBtn.addEventListener('click', () => {
     const date = dateInput.value;
     const type = typeSelect.value;
+    const zone = zoneSelect.value;
     const name = nameInput.value;
     const desc = descInput.value;
     const duration = parseInt(durationInput.value) || 0;
@@ -717,6 +732,7 @@ function renderExtraActivityModal() {
       id: Date.now(),
       date,
       type,
+      zone,
       name,
       desc,
       duration,
