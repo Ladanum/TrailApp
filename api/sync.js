@@ -1,3 +1,6 @@
+import https from 'https';
+import { URL } from 'url';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
@@ -12,55 +15,70 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Load data
       const userId = req.query.userId;
       if (!userId) {
         return res.status(400).json({ error: 'userId required' });
       }
 
-      const url = `${supabaseUrl}/rest/v1/user_data?user_id=eq.${encodeURIComponent(userId)}`;
-      console.log('Fetching:', url);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
+      const url = new URL(`${supabaseUrl}/rest/v1/user_data?user_id=eq.${encodeURIComponent(userId)}`);
+      return new Promise((resolve) => {
+        https.get({
+          hostname: url.hostname,
+          path: url.pathname + url.search,
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        }, (response) => {
+          let data = '';
+          response.on('data', chunk => data += chunk);
+          response.on('end', () => {
+            res.status(response.statusCode).json(JSON.parse(data || '[]'));
+            resolve();
+          });
+        }).on('error', (e) => {
+          res.status(500).json({ error: e.message });
+          resolve();
+        });
       });
-
-      console.log('Response status:', response.status);
-      const data = await response.json();
-      console.log('Response data:', data);
-      return res.status(response.status).json(data);
     } else if (req.method === 'POST') {
-      // Upsert data
-      const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+      const body = req.body;
+      const url = new URL(`${supabaseUrl}/rest/v1/user_data`);
+      const postData = JSON.stringify(body);
 
-      const url = `${supabaseUrl}/rest/v1/user_data`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'resolution=merge-duplicates'
-        },
-        body: JSON.stringify(body)
+      return new Promise((resolve) => {
+        const request = https.request({
+          hostname: url.hostname,
+          path: url.pathname,
+          method: 'POST',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates',
+            'Content-Length': Buffer.byteLength(postData)
+          }
+        }, (response) => {
+          let data = '';
+          response.on('data', chunk => data += chunk);
+          response.on('end', () => {
+            res.status(response.statusCode).json(JSON.parse(data || '{}'));
+            resolve();
+          });
+        }).on('error', (e) => {
+          res.status(500).json({ error: e.message });
+          resolve();
+        });
+
+        request.write(postData);
+        request.end();
       });
-
-      const data = await response.json();
-      return res.status(response.status).json(data);
     } else {
       return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
     console.error('Sync error:', error);
-    return res.status(500).json({
-      error: error.message || 'Internal server error',
-      details: error.toString(),
-      stack: error.stack
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
