@@ -499,8 +499,24 @@ const state = {
 };
 
 async function syncToSupabase() {
-  // Sync temporarily disabled - API endpoint issues
-  // Data is saved to localStorage only
+  if (!state.userId) return;
+
+  try {
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: state.userId,
+        completed_days: state.completedDays,
+        workout_data: state.workoutData,
+        progress_data: state.progressData,
+        race_data: state.raceData,
+        extra_activities: state.extraActivities
+      })
+    });
+  } catch (e) {
+    console.warn('Sync failed:', e.message);
+  }
 }
 
 function saveState() {
@@ -2087,8 +2103,31 @@ function paintRaces() {
 }
 
 async function loadFromSupabase() {
-  // Cloud sync temporarily disabled - API endpoint issues
-  // Will load from localStorage only
+  if (!state.userId) return;
+
+  try {
+    const response = await fetch(`/api/sync?userId=${encodeURIComponent(state.userId)}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (!data) return;
+
+    // Merge cloud data with local
+    if (data.completed_days) state.completedDays = { ...state.completedDays, ...data.completed_days };
+    if (data.workout_data) state.workoutData = { ...state.workoutData, ...data.workout_data };
+    if (data.progress_data) state.progressData = { ...state.progressData, ...data.progress_data };
+    if (data.race_data) state.raceData = data.race_data || state.raceData;
+    if (data.extra_activities) state.extraActivities = data.extra_activities || state.extraActivities;
+
+    // Save to localStorage
+    localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
+    localStorage.setItem('progreso_ultra_2026', JSON.stringify(state.progressData));
+    localStorage.setItem('trailapp_extras', JSON.stringify(state.extraActivities));
+    localStorage.setItem('trailapp_races', JSON.stringify(state.raceData));
+    localStorage.setItem('trailapp_workouts', JSON.stringify(state.workoutData));
+  } catch (e) {
+    console.warn('Load from cloud failed:', e.message);
+  }
 }
 
 async function initializeSupabase() {
