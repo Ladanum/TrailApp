@@ -499,8 +499,30 @@ const state = {
 };
 
 async function syncToSupabase() {
-  // Sync disabled for now - using localStorage only
-  // Data is automatically saved to browser storage
+  if (!state.userId) return;
+
+  const payload = {
+    user_id: state.userId,
+    completed_days: state.completedDays,
+    workout_data: state.workoutData,
+    progress_data: state.progressData,
+    race_data: state.raceData,
+    extra_activities: state.extraActivities
+  };
+
+  try {
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      console.warn('Sync failed:', response.status);
+    }
+  } catch (e) {
+    console.warn('Sync error:', e.message);
+  }
 }
 
 function saveState() {
@@ -613,6 +635,137 @@ function el(tag, attrs, ...children) {
 }
 
 // ─── EXTRA ACTIVITIES MODAL ──────────────────────────────────────────────────
+function openEditResultModal(sessionIndex, session) {
+  const data = state.workoutData[sessionIndex] || {};
+  const modal = el('div', { style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999' });
+  const card = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto' });
+
+  card.appendChild(el('h2', { style: 'font-size:18px;font-weight:700;color:#E6EDF3;margin-bottom:20px' }, '✏️ Editar ' + session.name));
+
+  const form = el('div', {});
+
+  const distInput = el('input', { type: 'number', step: '0.1', value: data.distance || '', placeholder: 'km', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Distancia (km)'),
+    distInput
+  ));
+
+  const durationInput = el('input', { type: 'number', value: data.duration || '', placeholder: 'min', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Duración (min)'),
+    durationInput
+  ));
+
+  const elevInput = el('input', { type: 'number', value: data.elevation || '', placeholder: 'm', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Desnivel (m)'),
+    elevInput
+  ));
+
+  const sensacionesInput = el('input', { type: 'number', min: '1', max: '5', value: data.sensaciones || '', placeholder: '1-5', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Sensaciones (1-5)'),
+    sensacionesInput
+  ));
+
+  card.appendChild(form);
+
+  const btnGroup = el('div', { style: 'display:flex;gap:8px;margin-top:20px' });
+  const saveBtn = el('button', { type: 'button', class: 'complete-btn undone', style: 'flex:1' });
+  saveBtn.textContent = '✓ Guardar';
+  saveBtn.addEventListener('click', () => {
+    state.workoutData[sessionIndex] = {
+      distance: parseFloat(distInput.value) || 0,
+      duration: parseInt(durationInput.value) || 0,
+      elevation: parseInt(elevInput.value) || 0,
+      sensaciones: parseInt(sensacionesInput.value) || 0
+    };
+    saveProgressData();
+    modal.remove();
+    paintDashboard();
+  });
+
+  const cancelBtn = el('button', { type: 'button', class: 'complete-btn done-state', style: 'flex:1' });
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => modal.remove());
+
+  btnGroup.appendChild(saveBtn);
+  btnGroup.appendChild(cancelBtn);
+  card.appendChild(btnGroup);
+
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+}
+
+function openEditExtraModal(activityId) {
+  const act = state.extraActivities.find(a => a.id === activityId);
+  if (!act) return;
+
+  const modal = el('div', { style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999' });
+  const card = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto' });
+
+  card.appendChild(el('h2', { style: 'font-size:18px;font-weight:700;color:#E6EDF3;margin-bottom:20px' }, '✏️ Editar ' + act.name));
+
+  const form = el('div', {});
+
+  const nameInput = el('input', { type: 'text', value: act.name, style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Nombre'),
+    nameInput
+  ));
+
+  const distInput = el('input', { type: 'number', step: '0.1', value: act.data.distance || '', placeholder: 'km', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Distancia (km)'),
+    distInput
+  ));
+
+  const durationInput = el('input', { type: 'number', value: act.duration || '', placeholder: 'min', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Duración (min)'),
+    durationInput
+  ));
+
+  const elevInput = el('input', { type: 'number', value: act.data.elevation || '', placeholder: 'm', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Desnivel (m)'),
+    elevInput
+  ));
+
+  const sensacionesInput = el('input', { type: 'number', min: '1', max: '5', value: act.sensaciones || '', placeholder: '1-5', style: 'width:100%;padding:10px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:12px;margin-bottom:12px' });
+  form.appendChild(el('div', { style: 'margin-bottom:16px' },
+    el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:6px' }, 'Sensaciones (1-5)'),
+    sensacionesInput
+  ));
+
+  card.appendChild(form);
+
+  const btnGroup = el('div', { style: 'display:flex;gap:8px;margin-top:20px' });
+  const saveBtn = el('button', { type: 'button', class: 'complete-btn undone', style: 'flex:1' });
+  saveBtn.textContent = '✓ Guardar';
+  saveBtn.addEventListener('click', () => {
+    act.name = nameInput.value;
+    act.data.distance = parseFloat(distInput.value) || 0;
+    act.duration = parseInt(durationInput.value) || 0;
+    act.data.elevation = parseInt(elevInput.value) || 0;
+    act.sensaciones = parseInt(sensacionesInput.value) || 0;
+    saveExtraActivities();
+    modal.remove();
+    paintDashboard();
+  });
+
+  const cancelBtn = el('button', { type: 'button', class: 'complete-btn done-state', style: 'flex:1' });
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => modal.remove());
+
+  btnGroup.appendChild(saveBtn);
+  btnGroup.appendChild(cancelBtn);
+  card.appendChild(btnGroup);
+
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+}
+
 function renderExtraActivityModal() {
   const modal = el('div', { style: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999' });
   const card = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:24px;max-width:600px;max-height:90vh;overflow-y:auto;width:90%' });
@@ -689,13 +842,19 @@ function renderExtraActivityModal() {
 
   card.appendChild(form);
 
+  // Variables to store metric inputs
+  let distanceInput, elevationInput;
+
   // Update metrics based on type
   const updateMetrics = () => {
     const type = typeSelect.value;
     metricsDiv.innerHTML = '';
+    distanceInput = null;
+    elevationInput = null;
+
     if (type === 'zone' || type === 'tl') {
-      const distanceInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 12.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
-      const elevationInput = el('input', { type: 'number', placeholder: 'ej: 300', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+      distanceInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 12.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+      elevationInput = el('input', { type: 'number', placeholder: 'ej: 300', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
       metricsDiv.appendChild(el('div', { style: 'margin-bottom:12px' },
         el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
         distanceInput
@@ -742,10 +901,8 @@ function renderExtraActivityModal() {
     };
 
     if (type === 'zone' || type === 'tl') {
-      const distInput = metricsDiv.querySelector('input[placeholder*="12.5"]');
-      const elevInput = metricsDiv.querySelector('input[placeholder*="300"]');
-      activity.data.distance = parseFloat(distInput?.value) || 0;
-      activity.data.elevation = parseInt(elevInput?.value) || 0;
+      if (distanceInput) activity.data.distance = parseFloat(distanceInput.value) || 0;
+      if (elevationInput) activity.data.elevation = parseInt(elevationInput.value) || 0;
     }
 
     state.extraActivities.push(activity);
@@ -925,6 +1082,26 @@ function renderDashboard() {
       if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
       if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
       card.appendChild(metricsDiv);
+
+      const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
+      const editBtn = el('button', { style: 'flex:1;padding:4px;font-size:10px;background:#A371F7;border:none;border-radius:3px;color:#fff;cursor:pointer' });
+      editBtn.textContent = '✏️ Editar';
+      editBtn.addEventListener('click', () => openEditResultModal(s.index, s));
+
+      const delBtn = el('button', { style: 'flex:1;padding:4px;font-size:10px;background:#DA3633;border:none;border-radius:3px;color:#fff;cursor:pointer' });
+      delBtn.textContent = '🗑️ Eliminar';
+      delBtn.addEventListener('click', () => {
+        if (confirm('¿Eliminar este resultado?')) {
+          state.completedDays[s.index] = false;
+          delete state.workoutData[s.index];
+          saveState();
+          paintDashboard();
+        }
+      });
+
+      btnDiv.appendChild(editBtn);
+      btnDiv.appendChild(delBtn);
+      card.appendChild(btnDiv);
     } else {
       card.appendChild(el('div', { style: 'flex:1;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:12px' }, '—'));
     }
@@ -962,7 +1139,7 @@ function renderDashboard() {
       if (act.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, act.data.distance + ' km'));
       if (act.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, act.duration + ' min'));
       if (act.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, act.data.elevation + ' m'));
-      if (act.data.distance && act.duration && act.type === 'running') {
+      if (act.data.distance && act.duration && (act.type === 'zone' || act.type === 'tl')) {
         const ritmoDecimal = act.duration / act.data.distance;
         const minutos = Math.floor(ritmoDecimal);
         const segundos = Math.round((ritmoDecimal - minutos) * 60);
@@ -971,6 +1148,26 @@ function renderDashboard() {
       }
       if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
       card.appendChild(metricsDiv);
+
+      const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
+      const editBtn = el('button', { style: 'flex:1;padding:4px;font-size:10px;background:#A371F7;border:none;border-radius:3px;color:#fff;cursor:pointer' });
+      editBtn.textContent = '✏️ Editar';
+      editBtn.addEventListener('click', () => openEditExtraModal(act.id));
+
+      const delBtn = el('button', { style: 'flex:1;padding:4px;font-size:10px;background:#DA3633;border:none;border-radius:3px;color:#fff;cursor:pointer' });
+      delBtn.textContent = '🗑️ Eliminar';
+      delBtn.addEventListener('click', () => {
+        if (confirm('¿Eliminar esta actividad?')) {
+          state.extraActivities = state.extraActivities.filter(a => a.id !== act.id);
+          saveExtraActivities();
+          paintDashboard();
+        }
+      });
+
+      btnDiv.appendChild(editBtn);
+      btnDiv.appendChild(delBtn);
+      card.appendChild(btnDiv);
+
       extrasGrid.appendChild(card);
     });
 
@@ -1912,23 +2109,64 @@ function paintRaces() {
 }
 
 async function loadFromSupabase() {
-  // Cloud sync disabled - using localStorage only
+  if (!state.userId) return;
+
+  try {
+    const response = await fetch(`/api/sync?userId=${encodeURIComponent(state.userId)}`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+    if (!data) return;
+
+    // Merge cloud data with local (cloud takes precedence if newer)
+    if (data.completed_days) state.completedDays = { ...state.completedDays, ...data.completed_days };
+    if (data.workout_data) state.workoutData = { ...state.workoutData, ...data.workout_data };
+    if (data.progress_data) state.progressData = { ...state.progressData, ...data.progress_data };
+    if (data.race_data) state.raceData = data.race_data || state.raceData;
+    if (data.extra_activities) state.extraActivities = data.extra_activities || state.extraActivities;
+
+    // Save merged state to localStorage
+    localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
+    localStorage.setItem('progreso_ultra_2026', JSON.stringify(state.progressData));
+    localStorage.setItem('trailapp_extras', JSON.stringify(state.extraActivities));
+    localStorage.setItem('trailapp_races', JSON.stringify(state.raceData));
+    localStorage.setItem('trailapp_workouts', JSON.stringify(state.workoutData));
+  } catch (e) {
+    console.warn('Load from cloud failed:', e.message);
+  }
 }
 
-function initializeSupabase() {
-  // Initialize app with localStorage
-  // Data persists in browser storage automatically
+async function initializeSupabase() {
+  // Initialize userId (create if doesn't exist)
+  if (!state.userId) {
+    state.userId = localStorage.getItem('trailapp_userId');
+    if (!state.userId) {
+      state.userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('trailapp_userId', state.userId);
+    }
+  }
+
+  // Load from cloud, then paint UI
+  await loadFromSupabase();
 
   paintDashboard();
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');
+
+  // Sync to cloud every 60 seconds
+  setInterval(syncToSupabase, 60000);
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.getElementById('days-count').textContent = daysUntil('2027-06-15');
 
-// Initialize with Supabase (cache bust: 2026-06-15)
-initializeSupabase();
+// Initialize with Supabase (cache bust: 2026-06-16)
+initializeSupabase().catch(e => {
+  console.error('Init error:', e);
+  paintDashboard();
+  paintProgress();
+  setView(localStorage.getItem('trailapp_view') || 'dashboard');
+});
 </script>
 </body>
 </html>
