@@ -878,63 +878,58 @@ function renderDashboard() {
   scroll.appendChild(grid);
   wrap.appendChild(scroll);
 
-  // Results week - show only completed activities, sorted by date
+  // Results week
   const resultsSection = el('div', {});
   resultsSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Resultados Reales'));
   const resultsScroll = el('div', { class: 'week-scroll' });
   const resultsGrid = el('div', { class: 'week-grid' });
 
-  // Combine completed sessions + extra activities
-  const allResults = [];
-
+  // Show completed sessions
   SESSIONS.forEach(s => {
     const done = !!state.completedDays[s.index];
-    if (done) {
-      allResults.push({
-        type: 'session',
-        sortDate: new Date(s.fullDate.match(/(\d+)\s+\w+\s+(\d+)/)[0] + ' ' + s.fullDate.match(/(\d{4})/)[1]),
-        day: s.day,
-        date: s.date,
-        data: state.workoutData[s.index]
-      });
-    }
-  });
+    const data = state.workoutData[s.index];
+    const card = el('div', { class: 'session-card' + (done ? ' done' : ''), style: done ? '' : 'opacity:0.5' });
 
-  state.extraActivities.forEach(act => {
-    allResults.push({
-      type: 'extra',
-      sortDate: new Date(act.date + 'T00:00:00Z'),
-      act: act
-    });
-  });
+    const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day' }, s.day));
+    card.appendChild(top);
+    card.appendChild(el('div', { class: 'card-date' }, s.date));
 
-  allResults.sort((a, b) => a.sortDate - b.sortDate);
-
-  allResults.forEach(result => {
-    if (result.type === 'session') {
-      const card = el('div', { class: 'session-card done' });
-      const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day' }, result.day));
-      card.appendChild(top);
-      card.appendChild(el('div', { class: 'card-date' }, result.date));
-
-      if (result.data) {
-        const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
-        if (result.data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, result.data.distance + ' km'));
-        if (result.data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, result.data.duration + ' min'));
-        if (result.data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, result.data.elevation + ' m'));
-        if (result.data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, result.data.hr + ' bpm'));
-        if (result.data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + result.data.sensaciones + '/5'));
-        card.appendChild(metricsDiv);
-      }
-      resultsGrid.appendChild(card);
+    if (done && data) {
+      const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
+      if (data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, data.distance + ' km'));
+      if (data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
+      if (data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, data.elevation + ' m'));
+      if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
+      if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
+      card.appendChild(metricsDiv);
     } else {
-      const act = result.act;
+      card.appendChild(el('div', { style: 'flex:1;display:flex;align-items:center;justify-content:center;color:#8B949E;font-size:12px' }, '—'));
+    }
+
+    resultsGrid.appendChild(card);
+  });
+
+  resultsScroll.appendChild(resultsGrid);
+  resultsSection.appendChild(resultsScroll);
+  wrap.appendChild(resultsSection);
+
+  // Extra Activities section
+  if (state.extraActivities.length > 0) {
+    const extrasSection = el('div', {});
+    extrasSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Actividades Extra'));
+    const extrasScroll = el('div', { class: 'week-scroll' });
+    const extrasGrid = el('div', { class: 'week-grid' });
+
+    // Sort extra activities by date
+    const sortedExtras = [...state.extraActivities].sort((a, b) => new Date(a.date + 'T00:00:00Z') - new Date(b.date + 'T00:00:00Z'));
+
+    sortedExtras.forEach(act => {
       const card = el('div', { class: 'session-card done', style: 'opacity:0.9' });
       const dateObj = new Date(act.date + 'T00:00:00Z');
       const dayStr = dateObj.toLocaleDateString('es-ES', {weekday:'short'}).substring(0,3).toUpperCase();
       const dateStr = dateObj.toLocaleDateString('es-ES', {month:'short', day:'numeric'});
 
-      const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day', style: 'font-size:9px' }, '⭐ ' + dayStr));
+      const top = el('div', { class: 'card-top' }, el('div', { class: 'card-day' }, dayStr));
       card.appendChild(top);
       card.appendChild(el('div', { class: 'card-date' }, dateStr));
       card.appendChild(el('span', { class: 'badge badge-quality' }, act.type.toUpperCase()));
@@ -950,9 +945,13 @@ function renderDashboard() {
       }
       if (act.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + act.sensaciones + '/5'));
       card.appendChild(metricsDiv);
-      resultsGrid.appendChild(card);
-    }
-  });
+      extrasGrid.appendChild(card);
+    });
+
+    extrasScroll.appendChild(extrasGrid);
+    extrasSection.appendChild(extrasScroll);
+    wrap.appendChild(extrasSection);
+  }
 
   resultsScroll.appendChild(resultsGrid);
   resultsSection.appendChild(resultsScroll);
