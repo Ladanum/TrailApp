@@ -957,6 +957,26 @@ function renderDashboard() {
     extrasSection.appendChild(extrasScroll);
   }
 
+  // Calculate planned weekly stats (week 1)
+  const weekPlan = WEEKS_PLAN[0]; // Week 1
+  let plannedTime = 0;
+  SESSIONS.forEach(s => {
+    const duration = parseInt(s.duration) || 0;
+    plannedTime += duration;
+  });
+
+  const plannedHours = Math.floor(plannedTime / 60);
+  const plannedMins = plannedTime % 60;
+  const plannedTimeStr = plannedHours > 0 ? `${plannedHours}h ${plannedMins}min` : `${plannedMins}min`;
+
+  // Planned stats
+  const plannedStats = el('div', { class: 'stat-grid' },
+    makeStatCard('Volumen sem.', weekPlan.vol + ' km', 'distancia planificada', '#8B949E'),
+    makeStatCard('D+ acumulado', weekPlan.elev + ' m', 'desnivel planificado', '#8B949E'),
+    makeStatCard('Tiempo total', plannedTimeStr, 'horas planificadas', '#8B949E')
+  );
+  wrap.appendChild(plannedStats);
+
   // Calculate real weekly stats
   let totalDistance = 0;
   let totalElevation = 0;
@@ -983,7 +1003,7 @@ function renderDashboard() {
   const mins = totalTime % 60;
   const timeStr = hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
 
-  // Stats
+  // Real stats
   const stats = el('div', { class: 'stat-grid' },
     makeStatCard('Volumen sem.', totalDistance.toFixed(1) + ' km', 'distancia real', '#3FB950'),
     makeStatCard('D+ acumulado', totalElevation + ' m', 'desnivel real', '#F0883E'),
