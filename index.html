@@ -1370,9 +1370,13 @@ function renderSession(idx) {
   // Complete button or Form
   if (state.showingForm && state.selectedDay === idx && !done) {
     // Show form for completing workout (dynamic by type)
-    const form = el('form', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;padding:20px;margin-bottom:12px' });
+    const formContainer = el('div', { style: 'background:#0D1117;border:1px solid #21262D;border-radius:8px;margin-bottom:12px;display:flex;flex-direction:column;max-height:600px' });
+    const formContent = el('div', { style: 'overflow-y:auto;padding:20px;flex:1' });
+    const form = el('form', { style: '' });
+
     const formTitle = el('h3', { style: 'font-size:14px;font-weight:600;margin-bottom:16px;color:#E6EDF3' }, '✓ Registrar Entreno Realizado');
     form.appendChild(formTitle);
+    formContent.appendChild(form);
 
     // Field references for easier access
     const formFields = {};
@@ -1543,8 +1547,12 @@ function renderSession(idx) {
 
     btnGroup.appendChild(saveBtn);
     btnGroup.appendChild(cancelBtn);
-    form.appendChild(btnGroup);
-    wrap.appendChild(form);
+
+    formContainer.appendChild(formContent);
+    const btnDiv = el('div', { style: 'padding:16px 20px;border-top:1px solid #21262D;background:#0D1117;display:flex;gap:8px' });
+    btnDiv.appendChild(btnGroup);
+    formContainer.appendChild(btnDiv);
+    wrap.appendChild(formContainer);
   } else {
     // Regular complete button
     const btn = el('button', { class: 'complete-btn ' + (done ? 'done-state' : 'undone') });
