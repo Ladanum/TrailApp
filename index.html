@@ -386,6 +386,13 @@ button { cursor: pointer; font-family: inherit; }
         </svg>
         <span class="sb-label" style="font-size:13px">Carreras</span>
       </button>
+      <button class="nav-btn" id="btn-plan" onclick="setView('plan')">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <rect x="1.5" y="1.5" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.3"></rect>
+          <path d="M1.5 4.5H13.5M4.5 1.5V13.5M10.5 1.5V13.5" stroke="currentColor" stroke-width="1.3"></path>
+        </svg>
+        <span class="sb-label" style="font-size:13px">Planificación</span>
+      </button>
     </div>
     <div class="sb-countdown sb-label">
       <div class="sb-countdown-label">Días hasta la carrera</div>
@@ -411,6 +418,7 @@ button { cursor: pointer; font-family: inherit; }
     <div id="view-session" class="fade-in" style="display:none"></div>
     <div id="view-progress" class="fade-in" style="display:none"></div>
     <div id="view-races" class="fade-in" style="display:none"></div>
+    <div id="view-plan" class="fade-in" style="display:none"></div>
   </main>
 
 <!-- LOGIN MODAL -->
@@ -2454,6 +2462,97 @@ function renderRaceForm(race) {
 }
 
 // ─── ROUTING ─────────────────────────────────────────────────────────────────
+// ─── PLANIFICACIÓN ───────────────────────────────────────────────────────────
+function renderPlan() {
+  const container = el('div', {});
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  // Para cada mes
+  for (let month = 0; month < 12; month++) {
+    const monthDiv = el('div', { style: 'margin-bottom: 40px;' });
+    monthDiv.appendChild(el('h2', { style: 'font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #0D1117;' }, months[month] + ' 2026'));
+
+    // Encontrar mesociclos en este mes
+    const mesocyclesInMonth = new Set();
+    for (let week = 1; week <= 52; week++) {
+      const weekDate = new Date('2026-01-05'); // Semana 1 empieza el 5 de enero
+      weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
+
+      if (weekDate.getMonth() === month) {
+        // Encontrar mesociclo de esta semana
+        for (const meso of MESOCICLOS) {
+          const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
+          if (week >= start && week <= end) {
+            mesocyclesInMonth.add(JSON.stringify({ name: meso.name, id: meso.id, color: meso.color, macro: meso.macro }));
+          }
+        }
+      }
+    }
+
+    // Mostrar mesociclos
+    for (const mesoJson of mesocyclesInMonth) {
+      const meso = JSON.parse(mesoJson);
+      const mesoDiv = el('div', { style: `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;` });
+      mesoDiv.appendChild(el('div', { style: 'font-size: 12px; font-weight: 600; color: ' + meso.color + '; text-transform: uppercase; margin-bottom: 8px;' }, meso.id + ' · ' + meso.macro));
+      mesoDiv.appendChild(el('div', { style: 'font-size: 14px; font-weight: 600; color: #0D1117;' }, meso.name));
+
+      // Entrenamientos de este mesociclo en este mes
+      const sessionsDiv = el('div', { style: 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 12px;' });
+
+      for (let week = 1; week <= 52; week++) {
+        const weekDate = new Date('2026-01-05');
+        weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
+
+        if (weekDate.getMonth() === month) {
+          const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
+          if (week >= start && week <= end) {
+            // Mostrar los 7 entrenamientos de esta semana
+            for (let day = 0; day < 7; day++) {
+              const session = SESSIONS[day];
+              const dayDate = new Date(weekDate);
+              dayDate.setDate(dayDate.getDate() + day);
+
+              const sessionCard = el('div', {
+                style: 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;',
+                onmouseover: 'this.style.borderColor="#3FB950"; this.style.boxShadow="0 0 12px rgba(63,185,80,0.2)"',
+                onmouseout: 'this.style.borderColor="#21262D"; this.style.boxShadow="none"',
+                onclick: `showSessionDetail(${day})`
+              });
+
+              sessionCard.appendChild(el('div', { style: 'font-size: 11px; color: #8b949e; margin-bottom: 4px;' }, dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' })));
+              sessionCard.appendChild(el('div', { style: 'font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px;' }, session.day + ' — ' + session.type));
+              sessionCard.appendChild(el('div', { style: 'font-size: 12px; color: #8b949e;' }, session.description.substring(0, 50) + '...'));
+              sessionCard.appendChild(el('div', { style: 'font-size: 11px; color: #3FB950; margin-top: 8px;' }, session.duration + (session.zone ? ' · ' + session.zone : '')));
+
+              sessionsDiv.appendChild(sessionCard);
+            }
+          }
+        }
+      }
+
+      mesoDiv.appendChild(sessionsDiv);
+      monthDiv.appendChild(mesoDiv);
+    }
+
+    container.appendChild(monthDiv);
+  }
+
+  return container;
+}
+
+function paintPlan() {
+  const v = document.getElementById('view-plan');
+  v.innerHTML = '';
+  v.classList.remove('fade-in');
+  void v.offsetWidth;
+  v.classList.add('fade-in');
+  v.appendChild(renderPlan());
+}
+
+function showSessionDetail(dayIndex) {
+  openSession(dayIndex);
+}
+
 function setView(view) {
   state.view = view;
   state.selectedDay = null;
@@ -2461,12 +2560,15 @@ function setView(view) {
   document.getElementById('view-session').style.display   = view === 'session'   ? '' : 'none';
   document.getElementById('view-progress').style.display  = view === 'progress'  ? '' : 'none';
   document.getElementById('view-races').style.display     = view === 'races'     ? '' : 'none';
+  document.getElementById('view-plan').style.display      = view === 'plan'      ? '' : 'none';
   document.getElementById('btn-dashboard').classList.toggle('active', view === 'dashboard' || view === 'session');
   document.getElementById('btn-progress').classList.toggle('active', view === 'progress');
   document.getElementById('btn-races').classList.toggle('active', view === 'races');
+  document.getElementById('btn-plan').classList.toggle('active', view === 'plan');
   if (view === 'dashboard') paintDashboard();
   if (view === 'progress')  paintProgress();
   if (view === 'races')     paintRaces();
+  if (view === 'plan')      paintPlan();
   localStorage.setItem('trailapp_view', view);
 }
 
