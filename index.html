@@ -386,10 +386,10 @@ button { cursor: pointer; font-family: inherit; }
       <div class="sb-countdown-date">15 jun 2027</div>
     </div>
     <div class="sb-device-sync sb-label">
-      <button onclick="toggleSyncModal()" style="all: unset; cursor: pointer; padding: 16px 20px; width: 100%; text-align: left; border-top: 1px solid #e0e0e0;">
-        <div style="font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #666666; margin-bottom: 8px; font-weight: 500;">Mi dispositivo</div>
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0D1117; word-break: break-all; line-height: 1.4;" id="user-id-display">user_xxx</div>
-        <div style="font-size: 9px; color: #3FB950; margin-top: 6px;">Click para sincronizar</div>
+      <button onclick="toggleLoginModal()" style="all: unset; cursor: pointer; padding: 16px 20px; width: 100%; text-align: left; border-top: 1px solid #e0e0e0;">
+        <div style="font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #666666; margin-bottom: 8px; font-weight: 500;">Usuario</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0D1117; word-break: break-all; line-height: 1.4;" id="username-display">—</div>
+        <div style="font-size: 9px; color: #3FB950; margin-top: 6px;">Click para cambiar</div>
       </button>
     </div>
   </nav>
@@ -402,28 +402,20 @@ button { cursor: pointer; font-family: inherit; }
     <div id="view-races" class="fade-in" style="display:none"></div>
   </main>
 
-  <!-- SYNC MODAL -->
-  <div id="sync-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+  <!-- LOGIN MODAL -->
+  <div id="login-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
     <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-      <h2 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Sincronizar dispositivos</h2>
-      <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Usa el mismo ID en ambos dispositivos para sincronizar datos automáticamente.</p>
-
-      <div style="background: #0D1117; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
-        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">Tu ID en este dispositivo:</div>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <code style="font-family: monospace; font-size: 11px; color: #3FB950; flex: 1; word-break: break-all;" id="sync-modal-id">user_xxx</code>
-          <button onclick="copyUserId()" style="background: #3FB950; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; white-space: nowrap;">Copiar</button>
-        </div>
-      </div>
+      <h2 style="margin-bottom: 8px; font-size: 18px; font-weight: 600;">Nombre de usuario</h2>
+      <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Usa el mismo nombre en ambos dispositivos para sincronizar datos.</p>
 
       <div style="margin-bottom: 16px;">
-        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">Pegar ID del otro dispositivo:</label>
-        <input type="text" id="other-user-id" placeholder="user_..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">
+        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">Tu nombre de usuario:</label>
+        <input type="text" id="username-input" placeholder="gerard" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;" autocomplete="off">
       </div>
 
       <div style="display: flex; gap: 8px;">
-        <button onclick="applySyncId()" style="flex: 1; background: #3FB950; color: #fff; border: none; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer;">Sincronizar</button>
-        <button onclick="toggleSyncModal()" style="flex: 1; background: #ddd; color: #000; border: none; padding: 10px; border-radius: 4px; font-size: 13px; cursor: pointer;">Cancelar</button>
+        <button onclick="applyUsername()" style="flex: 1; background: #3FB950; color: #fff; border: none; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer;">Conectar</button>
+        <button onclick="toggleLoginModal()" style="flex: 1; background: #ddd; color: #000; border: none; padding: 10px; border-radius: 4px; font-size: 13px; cursor: pointer;">Cancelar</button>
       </div>
     </div>
   </div>
@@ -611,15 +603,15 @@ const state = {
   selectedRace: null,
   showingRaceForm: false,
   shoes: JSON.parse(localStorage.getItem('trailapp_shoes') || '[]'),
-  userId: null,
+  username: null,
 };
 
 async function syncToSupabase() {
-  if (!state.userId) {
-    state.userId = localStorage.getItem('trailapp_userId');
-    if (!state.userId) {
-      state.userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-      localStorage.setItem('trailapp_userId', state.userId);
+  if (!state.username) {
+    state.username = localStorage.getItem('trailapp_username');
+    if (!state.username) {
+      state.username = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('trailapp_username', state.username);
     }
   }
 
@@ -632,14 +624,14 @@ async function syncToSupabase() {
     };
 
     // First, delete all existing records for this user to avoid duplicates
-    await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, {
+    await fetch(`${url}?user_id=eq.${encodeURIComponent(state.username)}`, {
       method: 'DELETE',
       headers
     });
 
     // Then, insert fresh data
     const payload = {
-      user_id: state.userId,
+      user_id: state.username,
       completed_days: state.completedDays,
       workout_data: state.workoutData,
       progress_data: state.progressData,
@@ -2484,7 +2476,7 @@ function paintDashboard() {
   void v.offsetWidth;
   v.classList.add('fade-in');
   v.appendChild(renderDashboard());
-  updateUserIdDisplay();
+  updateUsernameDisplay();
 }
 
 function paintProgress() {
@@ -2506,71 +2498,65 @@ function paintRaces() {
   v.appendChild(renderRaces());
 }
 
-// ─── SYNC FUNCTIONS ──────────────────────────────────────────────────────────
-function toggleSyncModal() {
-  const modal = document.getElementById('sync-modal');
+// ─── LOGIN FUNCTIONS ────────────────────────────────────────────────────────
+function toggleLoginModal() {
+  const modal = document.getElementById('login-modal');
   if (modal.style.display === 'none' || !modal.style.display) {
     modal.style.display = 'flex';
-    document.getElementById('sync-modal-id').textContent = state.userId;
-    document.getElementById('other-user-id').value = '';
+    document.getElementById('username-input').value = state.username || '';
+    document.getElementById('username-input').focus();
   } else {
     modal.style.display = 'none';
   }
 }
 
-function copyUserId() {
-  const id = state.userId;
-  navigator.clipboard.writeText(id).then(() => {
-    alert('ID copiado: ' + id);
-  }).catch(() => {
-    alert('No se pudo copiar. ID: ' + id);
-  });
-}
-
-function applySyncId() {
-  const otherId = document.getElementById('other-user-id').value.trim();
-  if (!otherId) {
-    alert('Por favor, pega el ID del otro dispositivo');
+function applyUsername() {
+  const username = document.getElementById('username-input').value.trim().toLowerCase();
+  if (!username) {
+    alert('Por favor, introduce un nombre de usuario');
+    return;
+  }
+  if (username.length < 3) {
+    alert('El nombre debe tener al menos 3 caracteres');
     return;
   }
 
-  // Clear old localStorage data
+  // Clear old data
   localStorage.removeItem('trailapp_completed');
   localStorage.removeItem('progreso_ultra_2026');
   localStorage.removeItem('trailapp_extras');
   localStorage.removeItem('trailapp_races');
   localStorage.removeItem('trailapp_workouts');
 
-  state.userId = otherId;
+  state.username = username;
   state.completedDays = {};
   state.workoutData = {};
   state.progressData = {};
   state.raceData = {};
   state.extraActivities = {};
 
-  localStorage.setItem('trailapp_userId', otherId);
-  document.getElementById('user-id-display').textContent = otherId;
+  localStorage.setItem('trailapp_username', username);
+  updateUsernameDisplay();
 
-  alert('Limpiando datos locales y cargando desde el servidor...');
+  alert('Conectando como ' + username + '...');
   loadFromSupabase().then(() => {
     paintDashboard();
     paintProgress();
-    toggleSyncModal();
-    alert('Datos sincronizados correctamente');
+    toggleLoginModal();
   });
 }
 
-function updateUserIdDisplay() {
-  if (state.userId) {
-    const elem = document.getElementById('user-id-display');
+function updateUsernameDisplay() {
+  if (state.username) {
+    const elem = document.getElementById('username-display');
     if (elem) {
-      elem.textContent = state.userId;
+      elem.textContent = state.username;
     }
   }
 }
 
 async function loadFromSupabase() {
-  if (!state.userId) return;
+  if (!state.username) return;
 
   try {
     const url = 'https://bpaeznkkyzynfcnyhdrs.supabase.co/rest/v1/trail_data';
@@ -2579,7 +2565,7 @@ async function loadFromSupabase() {
       'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE'
     };
 
-    const response = await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, { headers });
+    const response = await fetch(`${url}?user_id=eq.${encodeURIComponent(state.username)}`, { headers });
     if (!response.ok) return;
 
     const data = await response.json();
@@ -2603,19 +2589,19 @@ async function loadFromSupabase() {
 }
 
 async function initializeSupabase() {
-  // Initialize userId FIRST (create if doesn't exist)
-  if (!state.userId) {
-    state.userId = localStorage.getItem('trailapp_userId');
-    if (!state.userId) {
-      state.userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-      localStorage.setItem('trailapp_userId', state.userId);
-    }
+  // Load username from localStorage if exists
+  if (!state.username) {
+    state.username = localStorage.getItem('trailapp_username');
   }
 
-  // Ensure DOM element exists and update it
-  setTimeout(() => {
-    updateUserIdDisplay();
-  }, 100);
+  // Update display
+  updateUsernameDisplay();
+
+  // If no username, show login modal
+  if (!state.username) {
+    toggleLoginModal();
+    return;
+  }
 
   // Load from cloud, then paint UI
   await loadFromSupabase();
