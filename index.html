@@ -631,10 +631,13 @@ async function syncToSupabase() {
       'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE'
     };
 
-    const checkResponse = await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, { headers });
-    const existing = await checkResponse.json();
-    const exists = Array.isArray(existing) && existing.length > 0;
+    // First, delete all existing records for this user to avoid duplicates
+    await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, {
+      method: 'DELETE',
+      headers
+    });
 
+    // Then, insert fresh data
     const payload = {
       user_id: state.userId,
       completed_days: state.completedDays,
@@ -645,19 +648,11 @@ async function syncToSupabase() {
       updated_at: new Date().toISOString()
     };
 
-    if (exists) {
-      await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(payload)
-      });
-    } else {
-      await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      });
-    }
+    await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
   } catch (e) {
     console.warn('Sync failed:', e.message);
   }
