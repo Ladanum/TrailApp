@@ -2467,26 +2467,38 @@ function renderPlan() {
   const container = document.createElement('div');
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  // Para cada mes
-  for (let month = 0; month < 12; month++) {
+  // Agrupar entrenamientos por mes/año
+  const monthsToShow = new Map();
+
+  // Recorrer todas las semanas y agruparlas por mes
+  for (let week = 1; week <= 52; week++) {
+    const startDate = new Date('2026-06-15');
+    startDate.setDate(startDate.getDate() + (week - 1) * 7);
+
+    const monthKey = startDate.getFullYear() + '-' + startDate.getMonth();
+    if (!monthsToShow.has(monthKey)) {
+      monthsToShow.set(monthKey, { year: startDate.getFullYear(), month: startDate.getMonth(), weeks: [] });
+    }
+    monthsToShow.get(monthKey).weeks.push(week);
+  }
+
+  // Mostrar cada mes en orden
+  for (const [key, monthData] of monthsToShow) {
     const monthDiv = document.createElement('div');
     monthDiv.style.marginBottom = '40px';
 
     const monthTitle = document.createElement('h2');
     monthTitle.style.cssText = 'font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #0D1117;';
-    monthTitle.textContent = months[month] + ' 2026';
+    monthTitle.textContent = months[monthData.month] + ' ' + monthData.year;
     monthDiv.appendChild(monthTitle);
 
-    // Para cada semana
+    // Para cada semana en este mes
     const grid = document.createElement('div');
     grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;';
 
-    for (let week = 1; week <= 52; week++) {
+    for (const week of monthData.weeks) {
       const startDate = new Date('2026-06-15');
       startDate.setDate(startDate.getDate() + (week - 1) * 7);
-
-      // Si esta semana está en este mes
-      if (startDate.getMonth() === month) {
         // Encontrar mesociclo de esta semana
         let mesoForWeek = null;
         for (const meso of MESOCICLOS) {
