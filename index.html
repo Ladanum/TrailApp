@@ -2464,73 +2464,102 @@ function renderRaceForm(race) {
 // ─── ROUTING ─────────────────────────────────────────────────────────────────
 // ─── PLANIFICACIÓN ───────────────────────────────────────────────────────────
 function renderPlan() {
-  const container = el('div', {});
+  const container = document.createElement('div');
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+  // Crear mapa de semana -> mesociclo
+  const weekToMeso = {};
+  for (const meso of MESOCICLOS) {
+    const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
+    for (let w = start; w <= end; w++) {
+      weekToMeso[w] = meso;
+    }
+  }
 
   // Para cada mes
   for (let month = 0; month < 12; month++) {
-    const monthDiv = el('div', { style: 'margin-bottom: 40px;' });
-    monthDiv.appendChild(el('h2', { style: 'font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #0D1117;' }, months[month] + ' 2026'));
+    const monthDiv = document.createElement('div');
+    monthDiv.style.marginBottom = '40px';
 
-    // Encontrar mesociclos en este mes
-    const mesocyclesInMonth = new Set();
+    const monthTitle = document.createElement('h2');
+    monthTitle.style.cssText = 'font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #0D1117;';
+    monthTitle.textContent = months[month] + ' 2026';
+    monthDiv.appendChild(monthTitle);
+
+    // Encontrar mesociclos únicos en este mes
+    const mesoSet = new Set();
     for (let week = 1; week <= 52; week++) {
-      const weekDate = new Date('2026-01-05'); // Semana 1 empieza el 5 de enero
+      const weekDate = new Date('2026-01-05');
       weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
-
-      if (weekDate.getMonth() === month) {
-        // Encontrar mesociclo de esta semana
-        for (const meso of MESOCICLOS) {
-          const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
-          if (week >= start && week <= end) {
-            mesocyclesInMonth.add(JSON.stringify({ name: meso.name, id: meso.id, color: meso.color, macro: meso.macro }));
-          }
-        }
+      if (weekDate.getMonth() === month && weekToMeso[week]) {
+        mesoSet.add(weekToMeso[week].id);
       }
     }
 
-    // Mostrar mesociclos
-    for (const mesoJson of mesocyclesInMonth) {
-      const meso = JSON.parse(mesoJson);
-      const mesoDiv = el('div', { style: `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;` });
-      mesoDiv.appendChild(el('div', { style: 'font-size: 12px; font-weight: 600; color: ' + meso.color + '; text-transform: uppercase; margin-bottom: 8px;' }, meso.id + ' · ' + meso.macro));
-      mesoDiv.appendChild(el('div', { style: 'font-size: 14px; font-weight: 600; color: #0D1117;' }, meso.name));
+    // Para cada mesociclo en este mes
+    for (const mesoId of mesoSet) {
+      const meso = weekToMeso[Object.keys(weekToMeso).find(w => weekToMeso[w].id === mesoId)];
 
-      // Entrenamientos de este mesociclo en este mes
-      const sessionsDiv = el('div', { style: 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 12px;' });
+      const mesoDiv = document.createElement('div');
+      mesoDiv.style.cssText = `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;`;
+
+      const mesoHeader = document.createElement('div');
+      mesoHeader.style.cssText = `font-size: 12px; font-weight: 600; color: ${meso.color}; text-transform: uppercase; margin-bottom: 4px;`;
+      mesoHeader.textContent = meso.id + ' · ' + meso.macro;
+      mesoDiv.appendChild(mesoHeader);
+
+      const mesoName = document.createElement('div');
+      mesoName.style.cssText = 'font-size: 14px; font-weight: 600; color: #0D1117; margin-bottom: 12px;';
+      mesoName.textContent = meso.name;
+      mesoDiv.appendChild(mesoName);
+
+      // Entrenamientos
+      const grid = document.createElement('div');
+      grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;';
 
       for (let week = 1; week <= 52; week++) {
         const weekDate = new Date('2026-01-05');
         weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
 
-        if (weekDate.getMonth() === month) {
-          const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
-          if (week >= start && week <= end) {
-            // Mostrar los 7 entrenamientos de esta semana
-            for (let day = 0; day < 7; day++) {
-              const session = SESSIONS[day];
-              const dayDate = new Date(weekDate);
-              dayDate.setDate(dayDate.getDate() + day);
+        if (weekDate.getMonth() === month && weekToMeso[week] && weekToMeso[week].id === mesoId) {
+          // Los 7 días de la semana
+          for (let day = 0; day < 7; day++) {
+            const session = SESSIONS[day];
+            const dayDate = new Date(weekDate);
+            dayDate.setDate(dayDate.getDate() + day);
 
-              const sessionCard = el('div', {
-                style: 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;',
-                onmouseover: 'this.style.borderColor="#3FB950"; this.style.boxShadow="0 0 12px rgba(63,185,80,0.2)"',
-                onmouseout: 'this.style.borderColor="#21262D"; this.style.boxShadow="none"',
-                onclick: `showSessionDetail(${day})`
-              });
+            const card = document.createElement('div');
+            card.style.cssText = 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;';
+            card.onmouseover = () => { card.style.borderColor = '#3FB950'; card.style.boxShadow = '0 0 12px rgba(63,185,80,0.2)'; };
+            card.onmouseout = () => { card.style.borderColor = '#21262D'; card.style.boxShadow = 'none'; };
+            card.onclick = () => openSession(day);
 
-              sessionCard.appendChild(el('div', { style: 'font-size: 11px; color: #8b949e; margin-bottom: 4px;' }, dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' })));
-              sessionCard.appendChild(el('div', { style: 'font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px;' }, session.day + ' — ' + session.type));
-              sessionCard.appendChild(el('div', { style: 'font-size: 12px; color: #8b949e;' }, session.description.substring(0, 50) + '...'));
-              sessionCard.appendChild(el('div', { style: 'font-size: 11px; color: #3FB950; margin-top: 8px;' }, session.duration + (session.zone ? ' · ' + session.zone : '')));
+            const dateSpan = document.createElement('div');
+            dateSpan.style.cssText = 'font-size: 11px; color: #8b949e; margin-bottom: 4px;';
+            dateSpan.textContent = dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' });
+            card.appendChild(dateSpan);
 
-              sessionsDiv.appendChild(sessionCard);
-            }
+            const typeSpan = document.createElement('div');
+            typeSpan.style.cssText = 'font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px;';
+            typeSpan.textContent = session.day + ' — ' + session.type;
+            card.appendChild(typeSpan);
+
+            const descSpan = document.createElement('div');
+            descSpan.style.cssText = 'font-size: 12px; color: #8b949e;';
+            descSpan.textContent = session.description.substring(0, 50) + '...';
+            card.appendChild(descSpan);
+
+            const durationSpan = document.createElement('div');
+            durationSpan.style.cssText = 'font-size: 11px; color: #3FB950; margin-top: 8px;';
+            durationSpan.textContent = session.duration + (session.zone ? ' · ' + session.zone : '');
+            card.appendChild(durationSpan);
+
+            grid.appendChild(card);
           }
         }
       }
 
-      mesoDiv.appendChild(sessionsDiv);
+      mesoDiv.appendChild(grid);
       monthDiv.appendChild(mesoDiv);
     }
 
@@ -2547,10 +2576,6 @@ function paintPlan() {
   void v.offsetWidth;
   v.classList.add('fade-in');
   v.appendChild(renderPlan());
-}
-
-function showSessionDetail(dayIndex) {
-  openSession(dayIndex);
 }
 
 function setView(view) {
