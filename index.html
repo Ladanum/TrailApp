@@ -2470,7 +2470,10 @@ function renderPlan() {
   // Crear mapa de semana -> mesociclo
   const weekToMeso = {};
   for (const meso of MESOCICLOS) {
-    const [start, end] = meso.weeks.split('–').map(w => parseInt(w.trim()));
+    if (!meso.weeks || typeof meso.weeks !== 'string') continue;
+    const parts = meso.weeks.split('–');
+    if (parts.length !== 2) continue;
+    const [start, end] = parts.map(w => parseInt(w.trim()));
     for (let w = start; w <= end; w++) {
       weekToMeso[w] = meso;
     }
@@ -2499,6 +2502,7 @@ function renderPlan() {
     // Para cada mesociclo en este mes
     for (const mesoId of mesoSet) {
       const meso = MESOCICLOS.find(m => m.id === mesoId);
+      if (!meso || !meso.weeks) continue;
 
       const mesoDiv = document.createElement('div');
       mesoDiv.style.cssText = `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;`;
