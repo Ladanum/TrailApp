@@ -413,27 +413,7 @@ button { cursor: pointer; font-family: inherit; }
     <div id="view-races" class="fade-in" style="display:none"></div>
   </main>
 
-  <!-- INSTALL BUTTON FLOATING -->
-  <button id="install-fab" onclick="toggleInstallGuide()" style="position: fixed; bottom: 20px; right: 20px; background: #3FB950; color: white; border: none; border-radius: 50%; width: 56px; height: 56px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 999; display: flex; align-items: center; justify-content: center;">
-    ⬇
-  </button>
-
-  <!-- INSTALL GUIDE MODAL -->
-  <div id="install-guide" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1001;">
-    <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-      <h2 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Instalar TrailApp</h2>
-
-      <div id="install-steps" style="font-size: 13px; line-height: 1.6; color: #333;">
-        <!-- Se rellena dinámicamente -->
-      </div>
-
-      <div style="display: flex; gap: 8px; margin-top: 20px;">
-        <button onclick="toggleInstallGuide()" style="flex: 1; background: #3FB950; color: #fff; border: none; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer;">Entendido</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- LOGIN MODAL -->
+<!-- LOGIN MODAL -->
   <div id="login-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
     <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
       <h2 style="margin-bottom: 8px; font-size: 18px; font-weight: 600;">Nombre de usuario</h2>
@@ -2533,73 +2513,6 @@ function paintRaces() {
   void v.offsetWidth;
   v.classList.add('fade-in');
   v.appendChild(renderRaces());
-}
-
-// ─── PWA INSTALL FUNCTIONS ──────────────────────────────────────────────────
-let deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  const fab = document.getElementById('install-fab');
-  if (fab) fab.style.display = 'flex';
-});
-
-window.addEventListener('appinstalled', () => {
-  deferredPrompt = null;
-  const fab = document.getElementById('install-fab');
-  if (fab) fab.style.display = 'none';
-});
-
-function toggleInstallGuide() {
-  const guide = document.getElementById('install-guide');
-  if (guide.style.display === 'none' || !guide.style.display) {
-    guide.style.display = 'flex';
-    showInstallSteps();
-  } else {
-    guide.style.display = 'none';
-  }
-}
-
-function showInstallSteps() {
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const stepsDiv = document.getElementById('install-steps');
-
-  let html = '';
-
-  if (isAndroid) {
-    html = `
-      <strong>Android (Chrome):</strong><br>
-      1. Abre el menú ⋮ (esquina superior derecha)<br>
-      2. Busca "Instalar app" o "Añadir a pantalla de inicio"<br>
-      3. Click y listo<br><br>
-
-      Si no aparece ese opción, puede que ya esté instalada.
-    `;
-  } else if (isIOS) {
-    html = `
-      <strong>iPhone (Safari):</strong><br>
-      1. Click en el botón Compartir (cuadrado con flecha)<br>
-      2. Scroll hacia abajo<br>
-      3. Click en "Añadir a Pantalla de Inicio"<br>
-      4. Confirma el nombre y listo<br><br>
-
-      La app se instalará en tu home screen.
-    `;
-  } else {
-    html = `
-      <strong>Instrucciones:</strong><br>
-      Tu navegador debería mostrar un botón de instalar automáticamente.<br><br>
-
-      Si no lo ves:<br>
-      • Chrome: Menú ⋮ → "Instalar app"<br>
-      • Edge: Menú ⋮ → "Instalar"<br>
-      • Firefox: Menú ≡ → "Instalar"
-    `;
-  }
-
-  stepsDiv.innerHTML = html;
 }
 
 // ─── LOGIN FUNCTIONS ────────────────────────────────────────────────────────
