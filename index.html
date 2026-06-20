@@ -2490,8 +2490,16 @@ function renderPlan() {
         // Encontrar mesociclo de esta semana
         let mesoForWeek = null;
         for (const meso of MESOCICLOS) {
-          try {
-            if (!meso.weeks || typeof meso.weeks !== 'string') continue;
+          if (!meso.weeks) continue;
+          // Si weeks es un array
+          if (Array.isArray(meso.weeks)) {
+            if (meso.weeks.includes(week)) {
+              mesoForWeek = meso;
+              break;
+            }
+          }
+          // Si weeks es un string (formato antiguo)
+          else if (typeof meso.weeks === 'string') {
             const parts = meso.weeks.split('–');
             if (parts.length === 2) {
               const [start, end] = parts.map(w => parseInt(w.trim()));
@@ -2500,8 +2508,6 @@ function renderPlan() {
                 break;
               }
             }
-          } catch (e) {
-            continue;
           }
         }
 
