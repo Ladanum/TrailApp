@@ -2538,10 +2538,25 @@ function applySyncId() {
     alert('Por favor, pega el ID del otro dispositivo');
     return;
   }
+
+  // Clear old localStorage data
+  localStorage.removeItem('trailapp_completed');
+  localStorage.removeItem('progreso_ultra_2026');
+  localStorage.removeItem('trailapp_extras');
+  localStorage.removeItem('trailapp_races');
+  localStorage.removeItem('trailapp_workouts');
+
   state.userId = otherId;
+  state.completedDays = {};
+  state.workoutData = {};
+  state.progressData = {};
+  state.raceData = {};
+  state.extraActivities = {};
+
   localStorage.setItem('trailapp_userId', otherId);
   document.getElementById('user-id-display').textContent = otherId;
-  alert('ID sincronizado. Recargando datos...');
+
+  alert('Limpiando datos locales y cargando desde el servidor...');
   loadFromSupabase().then(() => {
     paintDashboard();
     paintProgress();
