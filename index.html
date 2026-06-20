@@ -2467,18 +2467,6 @@ function renderPlan() {
   const container = document.createElement('div');
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  // Crear mapa de semana -> mesociclo
-  const weekToMeso = {};
-  for (const meso of MESOCICLOS) {
-    if (!meso.weeks || typeof meso.weeks !== 'string') continue;
-    const parts = meso.weeks.split('–');
-    if (parts.length !== 2) continue;
-    const [start, end] = parts.map(w => parseInt(w.trim()));
-    for (let w = start; w <= end; w++) {
-      weekToMeso[w] = meso;
-    }
-  }
-
   // Para cada mes
   for (let month = 0; month < 12; month++) {
     const monthDiv = document.createElement('div');
@@ -2489,84 +2477,76 @@ function renderPlan() {
     monthTitle.textContent = months[month] + ' 2026';
     monthDiv.appendChild(monthTitle);
 
-    // Encontrar mesociclos únicos en este mes
-    const mesoSet = new Set();
+    // Para cada semana
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;';
+
     for (let week = 1; week <= 52; week++) {
-      const weekDate = new Date('2026-01-05');
-      weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
-      if (weekDate.getMonth() === month && weekToMeso[week]) {
-        mesoSet.add(weekToMeso[week].id);
-      }
-    }
+      const startDate = new Date('2026-01-05');
+      startDate.setDate(startDate.getDate() + (week - 1) * 7);
 
-    // Para cada mesociclo en este mes
-    for (const mesoId of mesoSet) {
-      const meso = MESOCICLOS.find(m => m.id === mesoId);
-      if (!meso || !meso.weeks) continue;
-
-      const mesoDiv = document.createElement('div');
-      mesoDiv.style.cssText = `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;`;
-
-      const mesoHeader = document.createElement('div');
-      mesoHeader.style.cssText = `font-size: 12px; font-weight: 600; color: ${meso.color}; text-transform: uppercase; margin-bottom: 4px;`;
-      mesoHeader.textContent = meso.id + ' · ' + meso.macro;
-      mesoDiv.appendChild(mesoHeader);
-
-      const mesoName = document.createElement('div');
-      mesoName.style.cssText = 'font-size: 14px; font-weight: 600; color: #0D1117; margin-bottom: 12px;';
-      mesoName.textContent = meso.name;
-      mesoDiv.appendChild(mesoName);
-
-      // Entrenamientos
-      const grid = document.createElement('div');
-      grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;';
-
-      for (let week = 1; week <= 52; week++) {
-        const weekDate = new Date('2026-01-05');
-        weekDate.setDate(weekDate.getDate() + (week - 1) * 7);
-
-        if (weekDate.getMonth() === month && weekToMeso[week] && weekToMeso[week].id === mesoId) {
-          // Los 7 días de la semana
-          for (let day = 0; day < 7; day++) {
-            const session = SESSIONS[day];
-            const dayDate = new Date(weekDate);
-            dayDate.setDate(dayDate.getDate() + day);
-
-            const card = document.createElement('div');
-            card.style.cssText = 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;';
-            card.onmouseover = () => { card.style.borderColor = '#3FB950'; card.style.boxShadow = '0 0 12px rgba(63,185,80,0.2)'; };
-            card.onmouseout = () => { card.style.borderColor = '#21262D'; card.style.boxShadow = 'none'; };
-            card.onclick = () => openSession(day);
-
-            const dateSpan = document.createElement('div');
-            dateSpan.style.cssText = 'font-size: 11px; color: #8b949e; margin-bottom: 4px;';
-            dateSpan.textContent = dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' });
-            card.appendChild(dateSpan);
-
-            const typeSpan = document.createElement('div');
-            typeSpan.style.cssText = 'font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px;';
-            typeSpan.textContent = session.day + ' — ' + session.type;
-            card.appendChild(typeSpan);
-
-            const descSpan = document.createElement('div');
-            descSpan.style.cssText = 'font-size: 12px; color: #8b949e;';
-            descSpan.textContent = session.description.substring(0, 50) + '...';
-            card.appendChild(descSpan);
-
-            const durationSpan = document.createElement('div');
-            durationSpan.style.cssText = 'font-size: 11px; color: #3FB950; margin-top: 8px;';
-            durationSpan.textContent = session.duration + (session.zone ? ' · ' + session.zone : '');
-            card.appendChild(durationSpan);
-
-            grid.appendChild(card);
+      // Si esta semana está en este mes
+      if (startDate.getMonth() === month) {
+        // Encontrar mesociclo de esta semana
+        let mesoForWeek = null;
+        for (const meso of MESOCICLOS) {
+          if (!meso.weeks || typeof meso.weeks !== 'string') continue;
+          const parts = meso.weeks.split('–');
+          if (parts.length === 2) {
+            const [start, end] = parts.map(w => parseInt(w.trim()));
+            if (week >= start && week <= end) {
+              mesoForWeek = meso;
+              break;
+            }
           }
         }
-      }
 
-      mesoDiv.appendChild(grid);
-      monthDiv.appendChild(mesoDiv);
+        // Los 7 entrenamientos de la semana
+        for (let day = 0; day < 7; day++) {
+          const session = SESSIONS[day];
+          const dayDate = new Date(startDate);
+          dayDate.setDate(dayDate.getDate() + day);
+
+          const card = document.createElement('div');
+          card.style.cssText = 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer; transition: all 0.2s;';
+          card.onmouseover = () => { card.style.borderColor = '#3FB950'; card.style.boxShadow = '0 0 12px rgba(63,185,80,0.2)'; };
+          card.onmouseout = () => { card.style.borderColor = '#21262D'; card.style.boxShadow = 'none'; };
+          card.onclick = () => openSession(day);
+
+          // Mesociclo tag
+          if (mesoForWeek) {
+            const mesoTag = document.createElement('div');
+            mesoTag.style.cssText = `font-size: 9px; font-weight: 600; color: ${mesoForWeek.color}; text-transform: uppercase; margin-bottom: 6px;`;
+            mesoTag.textContent = mesoForWeek.id + ' · ' + mesoForWeek.macro;
+            card.appendChild(mesoTag);
+          }
+
+          const dateSpan = document.createElement('div');
+          dateSpan.style.cssText = 'font-size: 11px; color: #8b949e; margin-bottom: 4px;';
+          dateSpan.textContent = dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' });
+          card.appendChild(dateSpan);
+
+          const typeSpan = document.createElement('div');
+          typeSpan.style.cssText = 'font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px;';
+          typeSpan.textContent = session.day + ' — ' + session.type;
+          card.appendChild(typeSpan);
+
+          const descSpan = document.createElement('div');
+          descSpan.style.cssText = 'font-size: 12px; color: #8b949e;';
+          descSpan.textContent = session.description.substring(0, 50) + '...';
+          card.appendChild(descSpan);
+
+          const durationSpan = document.createElement('div');
+          durationSpan.style.cssText = 'font-size: 11px; color: #3FB950; margin-top: 8px;';
+          durationSpan.textContent = session.duration + (session.zone ? ' · ' + session.zone : '');
+          card.appendChild(durationSpan);
+
+          grid.appendChild(card);
+        }
+      }
     }
 
+    monthDiv.appendChild(grid);
     container.appendChild(monthDiv);
   }
 
