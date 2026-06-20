@@ -2482,7 +2482,7 @@ function renderPlan() {
     grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 20px;';
 
     for (let week = 1; week <= 52; week++) {
-      const startDate = new Date('2026-01-05');
+      const startDate = new Date('2026-06-15');
       startDate.setDate(startDate.getDate() + (week - 1) * 7);
 
       // Si esta semana está en este mes
@@ -2490,14 +2490,18 @@ function renderPlan() {
         // Encontrar mesociclo de esta semana
         let mesoForWeek = null;
         for (const meso of MESOCICLOS) {
-          if (!meso.weeks || typeof meso.weeks !== 'string') continue;
-          const parts = meso.weeks.split('–');
-          if (parts.length === 2) {
-            const [start, end] = parts.map(w => parseInt(w.trim()));
-            if (week >= start && week <= end) {
-              mesoForWeek = meso;
-              break;
+          try {
+            if (!meso.weeks || typeof meso.weeks !== 'string') continue;
+            const parts = meso.weeks.split('–');
+            if (parts.length === 2) {
+              const [start, end] = parts.map(w => parseInt(w.trim()));
+              if (week >= start && week <= end) {
+                mesoForWeek = meso;
+                break;
+              }
             }
+          } catch (e) {
+            continue;
           }
         }
 
