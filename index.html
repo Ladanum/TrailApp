@@ -89,10 +89,10 @@ button { cursor: pointer; font-family: inherit; }
 /* CARDS */
 .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 @media (max-width: 768px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
 }
 @media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; gap: 6px; }
+  .stat-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
 }
 .stat-card {
   background: #0D1117; border: 1px solid #21262D;
@@ -117,20 +117,20 @@ button { cursor: pointer; font-family: inherit; }
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(128px, 1fr));
-  gap: 8px; min-width: 700px;
+  gap: 8px; min-width: 100%;
 }
 @media (max-width: 768px) {
   .week-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(7, minmax(100px, 1fr));
     gap: 6px;
-    min-width: auto;
+    min-width: 750px;
   }
 }
 @media (max-width: 480px) {
   .week-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(7, minmax(80px, 1fr));
     gap: 4px;
-    min-width: auto;
+    min-width: 620px;
   }
 }
 .week-scroll { overflow-x: auto; margin-bottom: 20px; }
