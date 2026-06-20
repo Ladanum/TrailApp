@@ -2466,6 +2466,98 @@ function renderRaceForm(race) {
 function renderPlan() {
   const container = document.createElement('div');
   const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const monthsMap = new Map();
+
+  // Agrupar semanas por mes
+  for (let week = 1; week <= 52; week++) {
+    const d = new Date('2026-06-15');
+    d.setDate(d.getDate() + (week - 1) * 7);
+    const key = d.getFullYear() + '-' + d.getMonth();
+    if (!monthsMap.has(key)) monthsMap.set(key, []);
+    monthsMap.get(key).push(week);
+  }
+
+  // Mostrar cada mes
+  for (const [key, weeks] of monthsMap) {
+    const [year, month] = key.split('-').map(Number);
+    const monthDiv = document.createElement('div');
+    monthDiv.style.marginBottom = '40px';
+
+    const title = document.createElement('h2');
+    title.textContent = months[month] + ' ' + year;
+    title.style.cssText = 'font-size: 20px; font-weight: 600; margin-bottom: 16px; color: #0D1117;';
+    monthDiv.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;';
+
+    // Mostrar entrenamientos de cada semana
+    for (const week of weeks) {
+      const d = new Date('2026-06-15');
+      d.setDate(d.getDate() + (week - 1) * 7);
+
+      // Encontrar mesociclo
+      let meso = null;
+      for (const m of MESOCICLOS) {
+        if (Array.isArray(m.weeks) && m.weeks.includes(week)) {
+          meso = m;
+          break;
+        }
+      }
+
+      // 7 días de la semana
+      for (let day = 0; day < 7; day++) {
+        const session = SESSIONS[day];
+        const dayDate = new Date(d);
+        dayDate.setDate(dayDate.getDate() + day);
+
+        const card = document.createElement('div');
+        card.style.cssText = 'background: #0D1117; border: 1px solid #21262D; border-radius: 6px; padding: 12px; cursor: pointer;';
+        card.onmouseover = () => { card.style.borderColor = '#3FB950'; };
+        card.onmouseout = () => { card.style.borderColor = '#21262D'; };
+        card.onclick = () => openSession(day);
+
+        if (meso) {
+          const tag = document.createElement('div');
+          tag.style.cssText = `font-size: 9px; color: ${meso.color}; font-weight: 600; margin-bottom: 6px;`;
+          tag.textContent = meso.id + ' · ' + meso.macro;
+          card.appendChild(tag);
+        }
+
+        const date = document.createElement('div');
+        date.style.cssText = 'font-size: 11px; color: #8b949e; margin-bottom: 4px;';
+        date.textContent = dayDate.toLocaleDateString('es', { weekday: 'short', month: 'short', day: 'numeric' });
+        card.appendChild(date);
+
+        const type = document.createElement('div');
+        type.style.cssText = 'font-size: 12px; color: #fff; font-weight: 600; margin-bottom: 6px;';
+        type.textContent = session.day + ' — ' + session.type;
+        card.appendChild(type);
+
+        const desc = document.createElement('div');
+        desc.style.cssText = 'font-size: 12px; color: #8b949e;';
+        desc.textContent = session.description.substring(0, 50) + '...';
+        card.appendChild(desc);
+
+        const dur = document.createElement('div');
+        dur.style.cssText = 'font-size: 11px; color: #3FB950; margin-top: 8px;';
+        dur.textContent = session.duration + (session.zone ? ' · ' + session.zone : '');
+        card.appendChild(dur);
+
+        grid.appendChild(card);
+      }
+    }
+
+    monthDiv.appendChild(grid);
+    container.appendChild(monthDiv);
+  }
+
+  return container;
+}
+
+function renderPlan_old() {
+  const container = document.createElement('div');
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
   // Agrupar entrenamientos por mes/año
   const monthsToShow = new Map();
