@@ -2,7 +2,14 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3FB950">
+<meta name="description" content="App de entrenamiento de trail running con sincronización en línea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TrailApp">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%233FB950' width='180' height='180'/><text x='90' y='100' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='90' font-weight='800' fill='white'>T</text></svg>">
 <title>TrailApp — Ultra 80K</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2641,6 +2648,15 @@ async function initializeSupabase() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 document.getElementById('days-count').textContent = daysUntil('2027-06-15');
+
+// Register Service Worker for offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js').then(reg => {
+    console.log('Service Worker registered:', reg);
+  }).catch(err => {
+    console.warn('Service Worker registration failed:', err);
+  });
+}
 
 // Initialize with Supabase (cache bust: 2026-06-16)
 initializeSupabase().catch(e => {
