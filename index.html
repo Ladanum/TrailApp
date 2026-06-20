@@ -413,6 +413,11 @@ button { cursor: pointer; font-family: inherit; }
     <div id="view-races" class="fade-in" style="display:none"></div>
   </main>
 
+  <!-- INSTALL BUTTON FLOATING -->
+  <button id="install-fab" onclick="installApp()" style="position: fixed; bottom: 20px; right: 20px; background: #3FB950; color: white; border: none; border-radius: 50%; width: 56px; height: 56px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: none; z-index: 999; align-items: center; justify-content: center;">
+    ⬇
+  </button>
+
   <!-- LOGIN MODAL -->
   <div id="login-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
     <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
@@ -2521,12 +2526,14 @@ let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  document.getElementById('install-btn').style.display = 'block';
+  const fab = document.getElementById('install-fab');
+  if (fab) fab.style.display = 'flex';
 });
 
 window.addEventListener('appinstalled', () => {
   deferredPrompt = null;
-  document.getElementById('install-btn').style.display = 'none';
+  const fab = document.getElementById('install-fab');
+  if (fab) fab.style.display = 'none';
 });
 
 function installApp() {
