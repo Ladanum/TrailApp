@@ -116,39 +116,41 @@ button { cursor: pointer; font-family: inherit; }
 /* SESSION CARDS */
 .week-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(100px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(7, minmax(128px, 1fr));
+  gap: 8px; min-width: 700px;
 }
 @media (max-width: 768px) {
   .week-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 6px;
+    min-width: auto;
   }
 }
 @media (max-width: 480px) {
   .week-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
+    min-width: auto;
   }
 }
-.week-scroll { overflow-x: auto; margin-bottom: 16px; }
+.week-scroll { overflow-x: auto; margin-bottom: 20px; }
 .session-card {
   background: #0D1117; border: 1px solid #21262D;
-  border-radius: 6px; padding: 10px;
+  border-radius: 8px; padding: 12px;
   cursor: pointer; display: flex; flex-direction: column;
-  min-height: 140px;
+  min-height: 168px;
   transition: opacity 0.15s, border-color 0.15s, background 0.15s;
 }
 @media (max-width: 768px) {
   .session-card {
-    min-height: 120px;
-    padding: 8px;
+    min-height: 130px;
+    padding: 10px;
   }
 }
 @media (max-width: 480px) {
   .session-card {
     min-height: 100px;
-    padding: 6px;
+    padding: 8px;
   }
 }
 .session-card:hover { opacity: 0.82; }
