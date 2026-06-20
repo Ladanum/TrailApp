@@ -609,10 +609,7 @@ const state = {
 async function syncToSupabase() {
   if (!state.username) {
     state.username = localStorage.getItem('trailapp_username');
-    if (!state.username) {
-      state.username = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
-      localStorage.setItem('trailapp_username', state.username);
-    }
+    if (!state.username) return;
   }
 
   try {
@@ -623,13 +620,6 @@ async function syncToSupabase() {
       'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE'
     };
 
-    // First, delete all existing records for this user to avoid duplicates
-    await fetch(`${url}?user_id=eq.${encodeURIComponent(state.username)}`, {
-      method: 'DELETE',
-      headers
-    });
-
-    // Then, insert fresh data
     const payload = {
       user_id: state.username,
       completed_days: state.completedDays,
@@ -640,11 +630,27 @@ async function syncToSupabase() {
       updated_at: new Date().toISOString()
     };
 
-    await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
+    // Check if record exists
+    const checkUrl = `${url}?user_id=eq.${encodeURIComponent(state.username)}`;
+    const checkResponse = await fetch(checkUrl, { headers });
+    const existing = await checkResponse.json();
+    const exists = Array.isArray(existing) && existing.length > 0;
+
+    if (exists) {
+      // Update existing record
+      await fetch(checkUrl, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // Insert new record
+      await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    }
   } catch (e) {
     console.warn('Sync failed:', e.message);
   }
