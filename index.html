@@ -1740,6 +1740,7 @@ function renderProgressTable() {
 function renderProgress() {
   const done = completedCount();
   const wrap = document.createElement('div');
+  wrap.style.paddingBottom = '60px';
 
   wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
     el('div', { class: 'page-eyebrow' }, 'MF1 · PROGRESO'),
@@ -1747,16 +1748,54 @@ function renderProgress() {
     el('div', { class: 'page-sub' }, 'Semana 1 de 52 · Plan Ultra 80K')
   ));
 
-  // Stats
-  const statItems = [
-    { l: 'Sesiones OK', v: done + ' / 7', s: 'esta semana', c: '#3FB950' },
-    { l: 'Volumen sem.', v: '~28 km', s: 'estimado', c: '#388BFD' },
-    { l: 'D+ acumulado', v: '0 m', s: 'llano', c: '#388BFD' },
-    { l: 'Semanas', v: '1 / 52', s: '1.9% del plan', c: '#8B949E' },
-  ];
-  const sg = el('div', { class: 'prog-grid4' });
-  statItems.forEach(x => sg.appendChild(makeStatCard(x.l, x.v, x.s, x.c)));
-  wrap.appendChild(sg);
+  // 1º - Semanas selector
+  wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
+    el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Seleccionar semana'),
+    el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
+      ...Array.from({length:52}, (_, i) => {
+        const week = i + 1;
+        const btn = el('button', { style: 'padding:8px 12px;border:1px solid #21262D;background:transparent;color:#8B949E;border-radius:4px;font-size:11px;cursor:pointer;transition:all 0.2s' });
+        btn.textContent = 'S' + week;
+        btn.style.background = week === 1 ? '#3FB950' : 'transparent';
+        btn.style.color = week === 1 ? '#0D1117' : '#8B949E';
+        return btn;
+      })
+    )
+  ));
+
+  // 2º - Sesiones realizadas
+  wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
+    el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Sesiones esta semana'),
+    el('div', { style: 'font-size:28px;font-weight:700;color:#3FB950;font-family:monospace' }, done + ' / 7')
+  ));
+
+  // 3º - Programado (2 columnas)
+  const weekPlan = WEEKS_PLAN[0];
+  wrap.appendChild(el('div', { class: 'stat-grid', style: 'grid-template-columns:repeat(2,1fr);margin-bottom:12px' },
+    makeStatCard('Volumen programado', weekPlan.vol + ' km', 'planificado', '#388BFD'),
+    makeStatCard('D+ programado', weekPlan.elev + ' m', 'planificado', '#F0883E')
+  ));
+
+  // 4º - Real (2 columnas)
+  let totalDistance = 0, totalElevation = 0;
+  SESSIONS.forEach(s => {
+    if (state.completedDays[s.index]) {
+      const data = state.workoutData[s.index];
+      if (data) {
+        totalDistance += parseFloat(data.distance) || 0;
+        totalElevation += parseInt(data.elevation) || 0;
+      }
+    }
+  });
+  state.extraActivities.forEach(act => {
+    totalDistance += parseFloat(act.data.distance) || 0;
+    totalElevation += parseInt(act.data.elevation) || 0;
+  });
+
+  wrap.appendChild(el('div', { class: 'stat-grid', style: 'grid-template-columns:repeat(2,1fr);margin-bottom:24px' },
+    makeStatCard('Volumen real', totalDistance.toFixed(1) + ' km', 'acumulado', '#3FB950'),
+    makeStatCard('D+ real', totalElevation + ' m', 'acumulado', '#F0883E')
+  ));
 
   // Calendar + checkpoints
   const g2 = el('div', { class: 'prog-grid2' });
