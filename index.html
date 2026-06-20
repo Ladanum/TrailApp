@@ -393,6 +393,10 @@ button { cursor: pointer; font-family: inherit; }
       <div class="sb-countdown-date">15 jun 2027</div>
     </div>
     <div class="sb-device-sync sb-label">
+      <button id="install-btn" onclick="installApp()" style="all: unset; cursor: pointer; padding: 16px 20px; width: 100%; text-align: left; border-top: 1px solid #e0e0e0; display: none;">
+        <div style="font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #3FB950; margin-bottom: 8px; font-weight: 600;">⬇ Instalar App</div>
+        <div style="font-size: 11px; color: #0D1117;">Hacer app móvil</div>
+      </button>
       <button onclick="toggleLoginModal()" style="all: unset; cursor: pointer; padding: 16px 20px; width: 100%; text-align: left; border-top: 1px solid #e0e0e0;">
         <div style="font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #666666; margin-bottom: 8px; font-weight: 500;">Usuario</div>
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0D1117; word-break: break-all; line-height: 1.4;" id="username-display">—</div>
@@ -2509,6 +2513,35 @@ function paintRaces() {
   void v.offsetWidth;
   v.classList.add('fade-in');
   v.appendChild(renderRaces());
+}
+
+// ─── PWA INSTALL FUNCTIONS ──────────────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-btn').style.display = 'block';
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  document.getElementById('install-btn').style.display = 'none';
+});
+
+function installApp() {
+  if (!deferredPrompt) {
+    alert('La app ya está instalada o el navegador no lo soporta');
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((choiceResult) => {
+    if (choiceResult.outcome === 'accepted') {
+      alert('App instalada correctamente');
+    }
+    deferredPrompt = null;
+    document.getElementById('install-btn').style.display = 'none';
+  });
 }
 
 // ─── LOGIN FUNCTIONS ────────────────────────────────────────────────────────
