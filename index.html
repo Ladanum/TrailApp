@@ -2498,7 +2498,7 @@ function renderPlan() {
 
     // Para cada mesociclo en este mes
     for (const mesoId of mesoSet) {
-      const meso = weekToMeso[Object.keys(weekToMeso).find(w => weekToMeso[w].id === mesoId)];
+      const meso = MESOCICLOS.find(m => m.id === mesoId);
 
       const mesoDiv = document.createElement('div');
       mesoDiv.style.cssText = `background: ${meso.color}22; border-left: 4px solid ${meso.color}; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;`;
