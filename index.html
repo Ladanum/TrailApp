@@ -1146,6 +1146,8 @@ function renderDashboard() {
       }
       if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
       if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
+      if (data.activityType) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#79C0FF;font-family:monospace;font-weight:600' }, data.activityType));
+      if ((s.cat === 'gym' || s.cat === 'rec') && data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
       card.appendChild(metricsDiv);
 
       const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
@@ -1438,6 +1440,13 @@ function renderSession(idx) {
           ));
         });
       }
+
+      // Duration for gym/rec
+      formFields.duration = el('input', { type: 'number', placeholder: 'ej: 60', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace;margin-top:12px' });
+      form.appendChild(el('div', { style: 'margin-bottom:12px' },
+        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Duración (minutos)'),
+        formFields.duration
+      ));
     }
 
     // Shoes selector
@@ -1508,6 +1517,8 @@ function renderSession(idx) {
           });
         }
         data.exercises = exercises;
+        data.duration = parseInt(formFields.duration.value) || 0;
+        data.activityType = s.cat === 'gym' ? 'Fuerza' : 'Movilidad';
         data.shoe = formFields.shoe.value || '';
         data.notes = formFields.notes.value;
       }
