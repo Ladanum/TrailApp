@@ -385,6 +385,13 @@ button { cursor: pointer; font-family: inherit; }
       <div class="sb-countdown-num" id="days-count">365</div>
       <div class="sb-countdown-date">15 jun 2027</div>
     </div>
+    <div class="sb-device-sync sb-label">
+      <button onclick="toggleSyncModal()" style="all: unset; cursor: pointer; padding: 16px 20px; width: 100%; text-align: left; border-top: 1px solid #e0e0e0;">
+        <div style="font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: #666666; margin-bottom: 8px; font-weight: 500;">Mi dispositivo</div>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #0D1117; word-break: break-all; line-height: 1.4;" id="user-id-display">user_xxx</div>
+        <div style="font-size: 9px; color: #3FB950; margin-top: 6px;">Click para sincronizar</div>
+      </button>
+    </div>
   </nav>
 
   <!-- MAIN -->
@@ -394,6 +401,32 @@ button { cursor: pointer; font-family: inherit; }
     <div id="view-progress" class="fade-in" style="display:none"></div>
     <div id="view-races" class="fade-in" style="display:none"></div>
   </main>
+
+  <!-- SYNC MODAL -->
+  <div id="sync-modal" style="display:none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div style="background: #f5f5f5; border-radius: 8px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+      <h2 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Sincronizar dispositivos</h2>
+      <p style="font-size: 13px; color: #666; margin-bottom: 16px;">Usa el mismo ID en ambos dispositivos para sincronizar datos automáticamente.</p>
+
+      <div style="background: #0D1117; padding: 12px; border-radius: 6px; margin-bottom: 16px;">
+        <div style="font-size: 11px; color: #888; margin-bottom: 6px;">Tu ID en este dispositivo:</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <code style="font-family: monospace; font-size: 11px; color: #3FB950; flex: 1; word-break: break-all;" id="sync-modal-id">user_xxx</code>
+          <button onclick="copyUserId()" style="background: #3FB950; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; white-space: nowrap;">Copiar</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px;">Pegar ID del otro dispositivo:</label>
+        <input type="text" id="other-user-id" placeholder="user_..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button onclick="applySyncId()" style="flex: 1; background: #3FB950; color: #fff; border: none; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: 600; cursor: pointer;">Sincronizar</button>
+        <button onclick="toggleSyncModal()" style="flex: 1; background: #ddd; color: #000; border: none; padding: 10px; border-radius: 4px; font-size: 13px; cursor: pointer;">Cancelar</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -582,21 +615,49 @@ const state = {
 };
 
 async function syncToSupabase() {
-  if (!state.userId) return;
+  if (!state.userId) {
+    state.userId = localStorage.getItem('trailapp_userId');
+    if (!state.userId) {
+      state.userId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+      localStorage.setItem('trailapp_userId', state.userId);
+    }
+  }
 
   try {
-    await fetch('/api/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: state.userId,
-        completed_days: state.completedDays,
-        workout_data: state.workoutData,
-        progress_data: state.progressData,
-        race_data: state.raceData,
-        extra_activities: state.extraActivities
-      })
-    });
+    const url = 'https://bpaeznkkyzynfcnyhdrs.supabase.co/rest/v1/trail_data';
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE'
+    };
+
+    const checkResponse = await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, { headers });
+    const existing = await checkResponse.json();
+    const exists = Array.isArray(existing) && existing.length > 0;
+
+    const payload = {
+      user_id: state.userId,
+      completed_days: state.completedDays,
+      workout_data: state.workoutData,
+      progress_data: state.progressData,
+      race_data: state.raceData,
+      extra_activities: state.extraActivities,
+      updated_at: new Date().toISOString()
+    };
+
+    if (exists) {
+      await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+    }
   } catch (e) {
     console.warn('Sync failed:', e.message);
   }
@@ -624,6 +685,7 @@ function saveRaceData() {
 
 function saveShoes() {
   localStorage.setItem('trailapp_shoes', JSON.stringify(state.shoes));
+  // Sync all data when shoes change
   syncToSupabase();
 }
 
@@ -1765,18 +1827,27 @@ function renderProgress() {
     el('div', { class: 'page-sub' }, 'Semana 1 de 52 · Plan Ultra 80K')
   ));
 
-  // 1º - Semanas selector
+  // 1º - Semanas completadas y porcentaje
+  let completedWeeks = 0;
+  WEEKS_PLAN.forEach(w => {
+    const weekData = state.progressData[String(w.week)];
+    if (weekData && (weekData.volReal || weekData.elevReal)) {
+      completedWeeks++;
+    }
+  });
+  const totalWeeks = 52;
+  const percentComplete = ((completedWeeks / totalWeeks) * 100).toFixed(1);
+
   wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
-    el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Seleccionar semana'),
-    el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-      ...Array.from({length:52}, (_, i) => {
-        const week = i + 1;
-        const btn = el('button', { style: 'padding:8px 12px;border:1px solid #21262D;background:transparent;color:#8B949E;border-radius:4px;font-size:11px;cursor:pointer;transition:all 0.2s' });
-        btn.textContent = 'S' + week;
-        btn.style.background = week === 1 ? '#3FB950' : 'transparent';
-        btn.style.color = week === 1 ? '#0D1117' : '#8B949E';
-        return btn;
-      })
+    el('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap' },
+      el('div', {},
+        el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase' }, 'Progreso del plan'),
+        el('div', { style: 'font-size:32px;font-weight:700;color:#3FB950;font-family:monospace' }, completedWeeks + ' / ' + totalWeeks)
+      ),
+      el('div', {},
+        el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase' }, 'Completado'),
+        el('div', { style: 'font-size:32px;font-weight:700;color:#388BFD;font-family:monospace' }, percentComplete + '%')
+      )
     )
   ));
 
@@ -1868,6 +1939,69 @@ function renderProgress() {
   g2.appendChild(cpWrap);
   wrap.appendChild(g2);
 
+  // Macrocycle totals
+  const macrocycleRanges = {
+    'MF1': { start: 1, end: 12 },
+    'MF2': { start: 13, end: 28 },
+    'MF3': { start: 29, end: 44 },
+    'MF4': { start: 45, end: 52 }
+  };
+
+  // Get current macrocycle (MF1 for now - can be updated to detect based on week)
+  const currentMacrocycleKey = 'MF1';
+  const currentMacroRange = macrocycleRanges[currentMacrocycleKey];
+
+  let macroDistance = 0, macroElevation = 0, macroExterior = 0, macroStrength = 0;
+
+  for (let week = currentMacroRange.start; week <= currentMacroRange.end; week++) {
+    const weekData = state.progressData[String(week)];
+
+    // For week 1, also include current workouts
+    if (week === 1) {
+      SESSIONS.forEach(s => {
+        if (state.completedDays[s.index] && state.workoutData[s.index]) {
+          const data = state.workoutData[s.index];
+          macroDistance += parseFloat(data.distance) || 0;
+          macroElevation += parseInt(data.elevation) || 0;
+
+          if (s.cat === 'zone' || s.cat === 'tl') {
+            macroExterior += parseInt(data.duration) || 0;
+          } else if (s.cat === 'gym' || s.cat === 'rec') {
+            macroStrength += parseInt(data.duration) || 0;
+          }
+        }
+      });
+
+      // Add extra activities for week 1
+      state.extraActivities.forEach(act => {
+        macroDistance += parseFloat(act.data.distance) || 0;
+        macroElevation += parseInt(act.data.elevation) || 0;
+
+        if (act.type === 'zone' || act.type === 'tl') {
+          macroExterior += parseInt(act.data.duration) || 0;
+        } else if (act.type === 'gym' || act.type === 'rec') {
+          macroStrength += parseInt(act.data.duration) || 0;
+        }
+      });
+    } else if (weekData) {
+      // For other weeks, use progressData
+      macroDistance += parseFloat(weekData.volReal) || 0;
+      macroElevation += parseInt(weekData.elevReal) || 0;
+      // Note: progressData doesn't distinguish between exterior and strength, so we can't calculate those
+    }
+  }
+
+  // Convert minutes to hours
+  const macroExteriorHours = (macroExterior / 60).toFixed(1);
+  const macroStrengthHours = (macroStrength / 60).toFixed(1);
+
+  wrap.appendChild(el('div', { class: 'stat-grid', style: 'grid-template-columns:repeat(4,1fr);margin-bottom:24px;margin-top:24px' },
+    makeStatCard('Distancia ' + currentMacrocycleKey, macroDistance.toFixed(1) + ' km', 'macrocycle', '#3FB950'),
+    makeStatCard('Desnivel ' + currentMacrocycleKey, macroElevation + ' m', 'macrocycle', '#F0883E'),
+    makeStatCard('Entreno exterior ' + currentMacrocycleKey, macroExteriorHours + ' h', 'macrocycle', '#388BFD'),
+    makeStatCard('Fuerza/Movilidad ' + currentMacrocycleKey, macroStrengthHours + ' h', 'macrocycle', '#A371F7')
+  ));
+
   // Phases bar
   const ph = el('div', { class: 'phases-wrap' },
     el('div', { class: 'phases-header' }, 'MACROFASES — 52 SEMANAS')
@@ -1918,7 +2052,31 @@ function renderProgress() {
 
   // Charts section
   const chartsSection = el('div', { style: 'margin-top:32px;margin-bottom:32px' });
-  chartsSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase' }, 'Gráficos de Análisis'));
+
+  // Macrocycle header and navigation
+  chartsSection.appendChild(el('div', { style: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px' },
+    el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;letter-spacing:0.05em;text-transform:uppercase' }, 'Gráficos de Análisis'),
+    el('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
+      ...['MF1', 'MF2', 'MF3', 'MF4'].map(mf => {
+        const btn = el('button', { class: 'control-btn' + (selectedMacrocycle === mf ? ' primary' : ''), style: mf === 'MF1' ? 'background:#3FB950;color:#0D1117;border-color:#3FB950' : '' });
+        btn.textContent = mf;
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-mf-btn]').forEach(b => {
+            b.style.background = 'transparent';
+            b.style.color = '#E6EDF3';
+            b.style.borderColor = '#21262D';
+            b.classList.remove('primary');
+          });
+          btn.style.background = '#3FB950';
+          btn.style.color = '#0D1117';
+          btn.classList.add('primary');
+          updateProgressCharts(mf);
+        });
+        btn.setAttribute('data-mf-btn', mf);
+        return btn;
+      })
+    )
+  ));
 
   // Chart 1: Volumen
   const chart1Div = el('div', { class: 'chart-container' });
@@ -1959,11 +2117,23 @@ function renderProgress() {
 }
 
 let progressCharts = {};
+let selectedMacrocycle = 'MF1'; // Track selected macrocycle for charts
 
-function updateProgressCharts() {
+function updateProgressCharts(macrocycle = selectedMacrocycle) {
+  selectedMacrocycle = macrocycle;
   // Destroy existing charts
   Object.values(progressCharts).forEach(c => c?.destroy?.());
   progressCharts = {};
+
+  // Get week range for selected macrocycle
+  const macrocycleRanges = {
+    'MF1': { start: 1, end: 12 },
+    'MF2': { start: 13, end: 28 },
+    'MF3': { start: 29, end: 44 },
+    'MF4': { start: 45, end: 52 }
+  };
+  const range = macrocycleRanges[macrocycle] || macrocycleRanges['MF1'];
+  const filteredWeeks = WEEKS_PLAN.filter(w => w.week >= range.start && w.week <= range.end);
 
   // Calculate current week volume from completed workouts (sum all sessions)
   let weekVolume = 0, weekElev = 0;
@@ -1992,31 +2162,31 @@ function updateProgressCharts() {
     }
   }
 
-  const volReal = WEEKS_PLAN.map((w, idx) => {
+  const volReal = filteredWeeks.map((w, idx) => {
     if (w.week === 1) return weekVolume || null;
     return parseFloat(state.progressData[String(w.week)]?.volReal) || null;
   });
-  const volTeor = WEEKS_PLAN.map(w => w.vol);
-  const elevReal = WEEKS_PLAN.map((w, idx) => {
+  const volTeor = filteredWeeks.map(w => w.vol);
+  const elevReal = filteredWeeks.map((w, idx) => {
     if (w.week === 1) return weekElev || null;
     return parseFloat(state.progressData[String(w.week)]?.elevReal) || null;
   });
-  const elevTeor = WEEKS_PLAN.map(w => w.elev);
-  const ritmo = WEEKS_PLAN.map((w, idx) => {
+  const elevTeor = filteredWeeks.map(w => w.elev);
+  const ritmo = filteredWeeks.map((w, idx) => {
     if (w.week === 1) return tlRitmo;
     return parseFloat(state.progressData[String(w.week)]?.ritmo) || null;
   });
-  const duracion = WEEKS_PLAN.map((w, idx) => {
+  const duracion = filteredWeeks.map((w, idx) => {
     if (w.week === 1) return tlDuration ? (tlDuration / 60) : null;
     return parseFloat(state.progressData[String(w.week)]?.duracion) || null;
   });
-  const duracionTeor = WEEKS_PLAN.map(w => {
+  const duracionTeor = filteredWeeks.map(w => {
     if (w.week >= 45) return 2;
     if (w.week >= 29) return 3.5;
     if (w.week >= 13) return 3;
     return 2.5;
   });
-  const weeks = WEEKS_PLAN.map(w => 'S' + w.week);
+  const weeks = filteredWeeks.map(w => 'S' + w.week);
 
   const chartOpts = {
     responsive: true,
@@ -2319,6 +2489,7 @@ function paintDashboard() {
   void v.offsetWidth;
   v.classList.add('fade-in');
   v.appendChild(renderDashboard());
+  updateUserIdDisplay();
 }
 
 function paintProgress() {
@@ -2340,24 +2511,77 @@ function paintRaces() {
   v.appendChild(renderRaces());
 }
 
+// ─── SYNC FUNCTIONS ──────────────────────────────────────────────────────────
+function toggleSyncModal() {
+  const modal = document.getElementById('sync-modal');
+  if (modal.style.display === 'none' || !modal.style.display) {
+    modal.style.display = 'flex';
+    document.getElementById('sync-modal-id').textContent = state.userId;
+    document.getElementById('other-user-id').value = '';
+  } else {
+    modal.style.display = 'none';
+  }
+}
+
+function copyUserId() {
+  const id = state.userId;
+  navigator.clipboard.writeText(id).then(() => {
+    alert('ID copiado: ' + id);
+  }).catch(() => {
+    alert('No se pudo copiar. ID: ' + id);
+  });
+}
+
+function applySyncId() {
+  const otherId = document.getElementById('other-user-id').value.trim();
+  if (!otherId) {
+    alert('Por favor, pega el ID del otro dispositivo');
+    return;
+  }
+  state.userId = otherId;
+  localStorage.setItem('trailapp_userId', otherId);
+  document.getElementById('user-id-display').textContent = otherId;
+  alert('ID sincronizado. Recargando datos...');
+  loadFromSupabase().then(() => {
+    paintDashboard();
+    paintProgress();
+    toggleSyncModal();
+    alert('Datos sincronizados correctamente');
+  });
+}
+
+function updateUserIdDisplay() {
+  if (state.userId) {
+    const elem = document.getElementById('user-id-display');
+    if (elem) {
+      elem.textContent = state.userId;
+    }
+  }
+}
+
 async function loadFromSupabase() {
   if (!state.userId) return;
 
   try {
-    const response = await fetch(`/api/sync?userId=${encodeURIComponent(state.userId)}`);
+    const url = 'https://bpaeznkkyzynfcnyhdrs.supabase.co/rest/v1/trail_data';
+    const headers = {
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE'
+    };
+
+    const response = await fetch(`${url}?user_id=eq.${encodeURIComponent(state.userId)}`, { headers });
     if (!response.ok) return;
 
     const data = await response.json();
-    if (!data) return;
+    if (!Array.isArray(data) || data.length === 0) return;
 
-    // Cloud data is source of truth - completely replace local
-    if (data.completed_days) state.completedDays = data.completed_days;
-    if (data.workout_data) state.workoutData = data.workout_data;
-    if (data.progress_data) state.progressData = data.progress_data;
-    if (data.race_data) state.raceData = data.race_data;
-    if (data.extra_activities) state.extraActivities = data.extra_activities;
+    const record = data[0];
+    if (record.completed_days) state.completedDays = record.completed_days;
+    if (record.workout_data) state.workoutData = record.workout_data;
+    if (record.progress_data) state.progressData = record.progress_data;
+    if (record.race_data) state.raceData = record.race_data;
+    if (record.extra_activities) state.extraActivities = record.extra_activities;
 
-    // Save to localStorage
     localStorage.setItem('trailapp_completed', JSON.stringify(state.completedDays));
     localStorage.setItem('progreso_ultra_2026', JSON.stringify(state.progressData));
     localStorage.setItem('trailapp_extras', JSON.stringify(state.extraActivities));
@@ -2369,7 +2593,7 @@ async function loadFromSupabase() {
 }
 
 async function initializeSupabase() {
-  // Initialize userId (create if doesn't exist)
+  // Initialize userId FIRST (create if doesn't exist)
   if (!state.userId) {
     state.userId = localStorage.getItem('trailapp_userId');
     if (!state.userId) {
@@ -2378,6 +2602,11 @@ async function initializeSupabase() {
     }
   }
 
+  // Ensure DOM element exists and update it
+  setTimeout(() => {
+    updateUserIdDisplay();
+  }, 100);
+
   // Load from cloud, then paint UI
   await loadFromSupabase();
 
@@ -2385,8 +2614,8 @@ async function initializeSupabase() {
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');
 
-  // Sync to cloud every 60 seconds
-  setInterval(syncToSupabase, 60000);
+  // Sync to cloud every 30 seconds (faster sync)
+  setInterval(syncToSupabase, 30000);
 
   // Load from cloud every 60 seconds
   setInterval(async () => {
@@ -2400,6 +2629,11 @@ async function initializeSupabase() {
     await loadFromSupabase();
     paintDashboard();
     paintProgress();
+  });
+
+  // Force sync on beforeunload to ensure data is saved before leaving
+  window.addEventListener('beforeunload', () => {
+    syncToSupabase();
   });
 }
 
