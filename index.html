@@ -1937,14 +1937,30 @@ function updateProgressCharts() {
   Object.values(progressCharts).forEach(c => c?.destroy?.());
   progressCharts = {};
 
-  // Calculate current week volume from completed workouts
-  let weekVolume = 0, weekElev = 0, weekDuration = 0;
+  // Calculate current week volume from completed workouts (sum all sessions)
+  let weekVolume = 0, weekElev = 0;
   for (let i = 0; i < 7; i++) {
     if (state.workoutData[i]) {
       const d = state.workoutData[i];
       weekVolume += parseFloat(d.distance) || 0;
       weekElev += parseInt(d.elevation) || 0;
-      weekDuration += parseInt(d.duration) || 0;
+    }
+  }
+
+  // Add extra activities to volume/elevation
+  state.extraActivities.forEach(act => {
+    weekVolume += parseFloat(act.data.distance) || 0;
+    weekElev += parseInt(act.data.elevation) || 0;
+  });
+
+  // Calculate TL (Tirada Larga) metrics - ONLY from session index 6 (Sunday TL)
+  let tlDuration = 0, tlRitmo = null;
+  if (state.workoutData[6]) {
+    const tlData = state.workoutData[6];
+    tlDuration = parseInt(tlData.duration) || 0;
+    if (tlData.distance && tlData.duration) {
+      const ritmoDecimal = tlData.duration / tlData.distance;
+      tlRitmo = parseFloat(ritmoDecimal.toFixed(2));
     }
   }
 
@@ -1958,9 +1974,12 @@ function updateProgressCharts() {
     return parseFloat(state.progressData[String(w.week)]?.elevReal) || null;
   });
   const elevTeor = WEEKS_PLAN.map(w => w.elev);
-  const ritmo = WEEKS_PLAN.map(w => parseFloat(state.progressData[String(w.week)]?.ritmo) || null);
+  const ritmo = WEEKS_PLAN.map((w, idx) => {
+    if (w.week === 1) return tlRitmo;
+    return parseFloat(state.progressData[String(w.week)]?.ritmo) || null;
+  });
   const duracion = WEEKS_PLAN.map((w, idx) => {
-    if (w.week === 1) return weekDuration ? (weekDuration / 60) : null;
+    if (w.week === 1) return tlDuration ? (tlDuration / 60) : null;
     return parseFloat(state.progressData[String(w.week)]?.duracion) || null;
   });
   const duracionTeor = WEEKS_PLAN.map(w => {
