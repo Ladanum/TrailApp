@@ -2421,19 +2421,19 @@ function renderRaces() {
     const dataGrid = el('div', { style: 'display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;padding:12px;background:#0D1117;border-radius:4px' });
     dataGrid.appendChild(el('div', {},
       el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Distancia'),
-      el('div', { style: 'font-size:14px;font-weight:600;color:#3FB950;font-family:monospace' }, race.distance + ' km')
+      el('div', { style: 'font-size:14px;font-weight:600;color:#3FB950;font-family:monospace' }, (race.distance !== null && race.distance !== undefined) ? race.distance + ' km' : '—')
     ));
     dataGrid.appendChild(el('div', {},
       el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Desnivel'),
-      el('div', { style: 'font-size:14px;font-weight:600;color:#F0883E;font-family:monospace' }, race.elevation + ' m')
+      el('div', { style: 'font-size:14px;font-weight:600;color:#F0883E;font-family:monospace' }, (race.elevation !== null && race.elevation !== undefined) ? race.elevation + ' m' : '—')
     ));
     dataGrid.appendChild(el('div', {},
       el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Tiempo est.'),
-      el('div', { style: 'font-size:12px;font-weight:600;color:#388BFD;font-family:monospace' }, Math.floor(race.timeMin / 60) + 'h' + (race.timeMin % 60).toString().padStart(2,'0') + ' – ' + Math.floor(race.timeMax / 60) + 'h' + (race.timeMax % 60).toString().padStart(2,'0') + 'm')
+      el('div', { style: 'font-size:12px;font-weight:600;color:#388BFD;font-family:monospace' }, (race.timeMin && race.timeMax) ? Math.floor(race.timeMin / 60) + 'h' + (race.timeMin % 60).toString().padStart(2,'0') + ' – ' + Math.floor(race.timeMax / 60) + 'h' + (race.timeMax % 60).toString().padStart(2,'0') + 'm' : '—')
     ));
     dataGrid.appendChild(el('div', {},
       el('div', { style: 'font-size:9px;color:#8B949E;text-transform:uppercase' }, 'Ritmo'),
-      el('div', { style: 'font-size:12px;font-weight:600;color:#A371F7;font-family:monospace' }, race.ritmoMin.toFixed(2) + ' – ' + race.ritmoMax.toFixed(2) + ' min/km')
+      el('div', { style: 'font-size:12px;font-weight:600;color:#A371F7;font-family:monospace' }, (race.ritmoMin && race.ritmoMax) ? race.ritmoMin.toFixed(2) + ' – ' + race.ritmoMax.toFixed(2) + ' min/km' : '—')
     ));
     card.appendChild(dataGrid);
 
