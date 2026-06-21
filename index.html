@@ -3491,12 +3491,12 @@ function renderDashboard() {
   );
   wrap.appendChild(plannedStats);
 
-  // Calculate real weekly stats
+  // Calculate real weekly stats (only current week sessions)
   let totalDistance = 0;
   let totalElevation = 0;
   let totalTime = 0;
 
-  SESSIONS.forEach(s => {
+  weekSessions.forEach(s => {
     if (state.completedDays[s.index]) {
       const data = state.workoutData[s.index];
       if (data) {
