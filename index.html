@@ -2014,6 +2014,13 @@ function renderProgress() {
     dc.style.border = isToday ? '2px solid #52cb63' : '1px solid rgba(255,255,255,0.06)';
     dc.style.color = textColor;
     dc.style.fontWeight = isToday ? '700' : (isDone || (hasSession && isPast) ? '600' : '400');
+
+    // Add click handler to show session details
+    if (sessionForDate) {
+      dc.style.cursor = 'pointer';
+      dc.addEventListener('click', () => openSession(sessionForDate.index));
+    }
+
     days.appendChild(dc);
   }
   cal.appendChild(days);
