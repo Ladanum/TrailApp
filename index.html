@@ -1092,10 +1092,17 @@ function renderDashboard() {
   );
   wrap.appendChild(pb);
 
+  // Calculate current week
+  const planStart = new Date('2026-06-15');
+  const today = new Date();
+  const daysDiff = Math.floor((today - planStart) / (1000 * 60 * 60 * 24));
+  const currentWeekIndex = Math.floor(daysDiff / 7) * 7;
+  const weekSessions = SESSIONS.filter(s => s.index >= currentWeekIndex && s.index < currentWeekIndex + 7);
+
   // Planned sessions
   const scroll = el('div', { class: 'week-scroll' });
   const grid = el('div', { class: 'week-grid' });
-  SESSIONS.forEach(s => {
+  weekSessions.forEach(s => {
     const done = !!state.completedDays[s.index];
     const data = state.workoutData[s.index];
     const today = new Date();
@@ -1163,8 +1170,8 @@ function renderDashboard() {
   const resultsScroll = el('div', { class: 'week-scroll' });
   const resultsGrid = el('div', { class: 'week-grid' });
 
-  // Show completed sessions
-  SESSIONS.forEach(s => {
+  // Show completed sessions (only current week)
+  weekSessions.forEach(s => {
     const done = !!state.completedDays[s.index];
     const data = state.workoutData[s.index];
     const card = el('div', { class: 'session-card' + (done ? ' done' : ''), style: done ? '' : 'opacity:0.5' });
