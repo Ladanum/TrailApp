@@ -1981,21 +1981,39 @@ function renderProgress() {
 
     // Buscar si hay una sesión para esta fecha
     let isDone = false;
+    let hasSession = false;
     const monthStr = monthNamesAbr[state.calendarMonth];
     const yearStr = state.calendarYear;
     const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
     const sessionForDate = sessionsByDate[dateKey];
-    if (sessionForDate && state.completedDays[sessionForDate.index]) {
-      isDone = true;
+    if (sessionForDate) {
+      hasSession = true;
+      isDone = !!state.completedDays[sessionForDate.index];
     }
 
     const isToday = (currentMonth === currDate.getMonth() && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
+    const isPast = currDate < new Date();
 
     const dc = el('div', { class: 'cal-day' }, String(dayNum));
-    dc.style.background = isToday ? '#3FB950' : (isDone ? 'rgba(63,185,80,0.2)' : 'transparent');
+
+    // Color logic: green if done, red if not done but has session and past, transparent otherwise
+    let bgColor = 'transparent';
+    let textColor = '#E6EDF3';
+    if (isToday) {
+      bgColor = '#3FB950';
+      textColor = '#0D1117';
+    } else if (isDone) {
+      bgColor = 'rgba(63,185,80,0.2)';
+      textColor = '#3FB950';
+    } else if (hasSession && isPast) {
+      bgColor = 'rgba(240,88,88,0.2)';
+      textColor = '#f05858';
+    }
+
+    dc.style.background = bgColor;
     dc.style.border = isToday ? '2px solid #52cb63' : '1px solid rgba(255,255,255,0.06)';
-    dc.style.color = isToday ? '#0D1117' : (isDone ? '#3FB950' : '#E6EDF3');
-    dc.style.fontWeight = isToday ? '700' : (isDone ? '600' : '400');
+    dc.style.color = textColor;
+    dc.style.fontWeight = isToday ? '700' : (isDone || (hasSession && isPast) ? '600' : '400');
     days.appendChild(dc);
   }
   cal.appendChild(days);
