@@ -3753,8 +3753,8 @@ function renderSession(idx) {
     // Field references for easier access
     const formFields = {};
 
-    // Zone/TL workouts
-    if (s.cat === 'zone' || s.cat === 'tl') {
+    // Zone/TL workouts (Endurance, Trail Running)
+    if (s.cat === 'Endurance' || s.cat === 'Trail Running') {
       formFields.distance = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 10.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-family:monospace' });
       form.appendChild(el('div', { style: 'margin-bottom:12px' },
         el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
@@ -3799,8 +3799,8 @@ function renderSession(idx) {
       ));
     }
 
-    // Gym/Recovery workouts with exercises
-    if (s.cat === 'gym' || s.cat === 'rec') {
+    // Gym/Recovery workouts with exercises (Strength, Recovery)
+    if (s.cat === 'Strength' || s.cat === 'Recovery') {
       if (s.blocks) {
         s.blocks.forEach(b => {
           form.appendChild(el('div', { style: 'margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #21262D' },
