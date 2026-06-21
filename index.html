@@ -2043,9 +2043,11 @@ function renderProgress() {
 
   // Primer día del mes (1)
   const firstDay = new Date(state.calendarYear, state.calendarMonth, 1);
-  const dayOfWeekFirstDay = firstDay.getDay(); // 0=domingo, 1=lunes, etc.
+  let dayOfWeekFirstDay = firstDay.getDay(); // 0=domingo, 1=lunes, etc.
+  if (dayOfWeekFirstDay === 0) dayOfWeekFirstDay = 7; // Convertir domingo (0) a 7 para sistema lunes-primero
+  dayOfWeekFirstDay -= 1; // Ajustar para que lunes sea 0
 
-  // Rellenar con días en blanco del mes anterior si es necesario
+  // Rellenar con días en blanco del mes anterior si es necesario (lunes = 0)
   for (let i = 0; i < dayOfWeekFirstDay; i++) {
     const dc = el('div', { class: 'cal-day' }, '');
     dc.style.color = 'transparent';
