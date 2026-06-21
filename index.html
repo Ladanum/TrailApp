@@ -4253,6 +4253,10 @@ function renderProgress() {
   // Map sessions by date for quick lookup
   const monthNamesAbr = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const sessionsByDate = {};
+
+  console.log('🔍 BUILDING sessionsByDate... SESSIONS.length =', SESSIONS.length);
+  console.log('🔍 First 5 SESSIONS:', SESSIONS.slice(0, 5).map(s => ({index: s.index, fullDate: s.fullDate, type: s.type})));
+
   SESSIONS.forEach(s => {
     // Handle both old format "15 Jun 2026" and new format "2026-06-15"
     let dateKey;
@@ -4267,8 +4271,18 @@ function renderProgress() {
       const parts = s.fullDate.split(', ')[1]; // Get "15 Jun 2026"
       dateKey = parts;
     }
-    if (dateKey) sessionsByDate[dateKey.toLowerCase()] = s;
+    if (dateKey) {
+      const lowerKey = dateKey.toLowerCase();
+      sessionsByDate[lowerKey] = s;
+      // Log July sessions being added
+      if (lowerKey.includes('jul')) {
+        console.log(`  ✓ Added: "${lowerKey}" → index ${s.index}, type ${s.type}`);
+      }
+    }
   });
+
+  console.log('🔍 sessionsByDate keys with "jul":', Object.keys(sessionsByDate).filter(k => k.includes('jul')).sort());
+  console.log('🔍 Total sessions in sessionsByDate:', Object.keys(sessionsByDate).length);
 
   // Último día del mes
   const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
@@ -4284,7 +4298,18 @@ function renderProgress() {
     const monthStr = monthNamesAbr[state.calendarMonth];
     const yearStr = state.calendarYear;
     const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
-    const sessionForDate = sessionsByDate[dateKey.toLowerCase()];
+    const lowerKey = dateKey.toLowerCase();
+    const sessionForDate = sessionsByDate[lowerKey];
+
+    // DEBUG: Log all July days to diagnose issue
+    if (state.calendarMonth === 6) {
+      if (dayNum === 1) {
+        console.log(`\n📅 RENDERIZANDO JULIO ${state.calendarYear}...`);
+        console.log(`Available keys in sessionsByDate with 'jul': `, Object.keys(sessionsByDate).filter(k => k.includes('jul')));
+      }
+      console.log(`  [${dayNum}] Buscando: "${lowerKey}" → ${sessionForDate ? '✓ ENCONTRADO ('+sessionForDate.type+')' : '✗ NO ENCONTRADO'}`);
+    }
+
     if (sessionForDate) {
       hasSession = true;
       isDone = !!state.completedDays[sessionForDate.index];
