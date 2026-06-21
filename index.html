@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- PLANNING TAB COMPLETELY REMOVED - JUNE 21 2026 - NO PLAN BUTTON, NO PLAN VIEW -->
+<!-- PLANNING TAB COMPLETELY REMOVED - JUNE 21 2026 - NO PLAN BUTTON, NO PLAN VIEW - CACHE FIX v2 -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -1968,7 +1968,7 @@ function renderProgress() {
   const sessionsByDate = {};
   SESSIONS.forEach(s => {
     const parts = s.fullDate.split(', ')[1]; // Get "15 jun 2026"
-    if (parts) sessionsByDate[parts] = s;
+    if (parts) sessionsByDate[parts.toLowerCase()] = s;
   });
 
   // Último día del mes
