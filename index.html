@@ -2001,10 +2001,10 @@ function renderProgress() {
   const g2 = el('div', { class: 'prog-grid2' });
 
   // Calendar - show current week
-  const today = new Date();
-  const currentDay = today.getDate();
-  const currentMonth = today.getMonth() + 1; // 1-12
-  const currentYear = today.getFullYear();
+  const currentDate = new Date();
+  const currentDay = currentDate.getDate();
+  const currentMonth = currentDate.getMonth() + 1; // 1-12
+  const currentYear = currentDate.getFullYear();
 
   const weekStart = new Date('2026-06-15');
   weekStart.setDate(weekStart.getDate() + (currentWeekClamped - 1) * 7);
