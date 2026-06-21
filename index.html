@@ -2041,15 +2041,16 @@ function renderProgress() {
   cal.appendChild(dow);
   const days = el('div', { class: 'cal-days' });
 
-  // Primer día del mes
+  // Primer día del mes (1)
   const firstDay = new Date(state.calendarYear, state.calendarMonth, 1);
-  const startDate = new Date(firstDay);
-  startDate.setDate(startDate.getDate() - firstDay.getDay());
+  const dayOfWeekFirstDay = firstDay.getDay(); // 0=domingo, 1=lunes, etc.
 
-  // Último día del mes
-  const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
-  const endDate = new Date(lastDay);
-  endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+  // Rellenar con días en blanco del mes anterior si es necesario
+  for (let i = 0; i < dayOfWeekFirstDay; i++) {
+    const dc = el('div', { class: 'cal-day' }, '');
+    dc.style.color = 'transparent';
+    days.appendChild(dc);
+  }
 
   // Map sessions by date for quick lookup
   const monthNamesAbr = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -2059,30 +2060,30 @@ function renderProgress() {
     if (parts) sessionsByDate[parts] = s;
   });
 
-  // Generar todos los días
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    const currDate = new Date(d);
-    const isCurrentMonth = currDate.getMonth() === state.calendarMonth;
+  // Último día del mes
+  const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
+  const lastDayNum = lastDay.getDate();
+
+  // Generar los días del mes actual
+  for (let dayNum = 1; dayNum <= lastDayNum; dayNum++) {
+    const currDate = new Date(state.calendarYear, state.calendarMonth, dayNum);
 
     // Buscar si hay una sesión para esta fecha
     let isDone = false;
-    if (isCurrentMonth) {
-      const dayNum = currDate.getDate();
-      const monthStr = monthNamesAbr[state.calendarMonth];
-      const yearStr = state.calendarYear;
-      const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
-      const sessionForDate = sessionsByDate[dateKey];
-      if (sessionForDate && state.completedDays[sessionForDate.index]) {
-        isDone = true;
-      }
+    const monthStr = monthNamesAbr[state.calendarMonth];
+    const yearStr = state.calendarYear;
+    const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
+    const sessionForDate = sessionsByDate[dateKey];
+    if (sessionForDate && state.completedDays[sessionForDate.index]) {
+      isDone = true;
     }
 
     const isToday = (currentMonth === currDate.getMonth() && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
 
-    const dc = el('div', { class: 'cal-day' }, String(currDate.getDate()));
+    const dc = el('div', { class: 'cal-day' }, String(dayNum));
     dc.style.background = isToday ? '#3FB950' : (isDone ? 'rgba(63,185,80,0.2)' : 'transparent');
-    dc.style.border = isToday ? '2px solid #52cb63' : (isCurrentMonth ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent');
-    dc.style.color = isToday ? '#0D1117' : (isDone ? '#3FB950' : (isCurrentMonth ? '#E6EDF3' : 'rgba(139,148,158,0.4)'));
+    dc.style.border = isToday ? '2px solid #52cb63' : '1px solid rgba(255,255,255,0.06)';
+    dc.style.color = isToday ? '#0D1117' : (isDone ? '#3FB950' : '#E6EDF3');
     dc.style.fontWeight = isToday ? '700' : (isDone ? '600' : '400');
     days.appendChild(dc);
   }
