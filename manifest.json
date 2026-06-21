@@ -4,7 +4,7 @@
   "description": "App de entrenamiento de trail running con sincronización en línea",
   "start_url": "/",
   "scope": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait-primary",
   "theme_color": "#3FB950",
   "background_color": "#f5f5f5",
