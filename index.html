@@ -3487,7 +3487,7 @@ function renderDashboard() {
   const plannedStats = el('div', { class: 'stat-grid' },
     makeStatCard('Volumen sem.', weekPlan.vol + ' km', 'distancia planificada', '#8B949E'),
     makeStatCard('D+ acumulado', weekPlan.elev + ' m', 'desnivel planificado', '#8B949E'),
-    makeStatCard('Tiempo total', plannedTimeStr, 'horas planificadas', '#8B949E')
+    makeStatCard('Tiempo programado', plannedTimeStr, 'suma estimada de sesiones', '#8B949E')
   );
   wrap.appendChild(plannedStats);
 
@@ -3521,7 +3521,7 @@ function renderDashboard() {
   const stats = el('div', { class: 'stat-grid' },
     makeStatCard('Volumen sem.', totalDistance.toFixed(1) + ' km', 'distancia real', '#3FB950'),
     makeStatCard('D+ acumulado', totalElevation + ' m', 'desnivel real', '#F0883E'),
-    makeStatCard('Tiempo total', timeStr, 'horas reales', '#388BFD')
+    makeStatCard('Tiempo completado', timeStr, 'sesiones finalizadas', '#388BFD')
   );
   wrap.appendChild(stats);
 
