@@ -1994,7 +1994,14 @@ function renderProgress() {
     const isToday = (currentMonth === currDate.getMonth() && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
     const isPast = currDate < new Date();
 
-    const dc = el('div', { class: 'cal-day' }, String(dayNum));
+    const dc = el('div', { class: 'cal-day' });
+    const dayNum_el = el('div', { style: 'font-weight: 600; font-size: 1.1em;' }, String(dayNum));
+    dc.appendChild(dayNum_el);
+
+    if (sessionForDate) {
+      const typeEl = el('div', { style: 'font-size: 0.75em; opacity: 0.7; margin-top: 2px;' }, sessionForDate.type);
+      dc.appendChild(typeEl);
+    }
 
     // Color logic: green if done, red if not done but has session and past, transparent otherwise
     let bgColor = 'transparent';
