@@ -3463,7 +3463,7 @@ function renderDashboard() {
   // Calculate planned weekly stats (week 1)
   const weekPlan = WEEKS_PLAN[0]; // Week 1
   let plannedTime = 0;
-  SESSIONS.forEach(s => {
+  weekSessions.forEach(s => {
     const duration = parseInt(s.duration) || 0;
     plannedTime += duration;
   });
