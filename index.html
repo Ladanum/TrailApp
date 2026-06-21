@@ -3198,6 +3198,17 @@ function renderExtraActivityModal() {
 }
 
 // ─── VIEWS ───────────────────────────────────────────────────────────────────
+function getSessionDateObj(fullDate) {
+  if (fullDate.includes('-')) {
+    // ISO format: "2026-07-01"
+    return new Date(fullDate + 'T00:00:00Z');
+  } else {
+    // Old format: "Lunes, 15 Jun 2026" -> extract "15 Jun 2026"
+    const parts = fullDate.split(', ')[1];
+    return new Date(parts);
+  }
+}
+
 function renderDashboard() {
   const wrap = document.createElement('div');
   wrap.style.paddingBottom = '60px';
@@ -3271,7 +3282,7 @@ function renderDashboard() {
     const done = !!state.completedDays[s.index];
     const data = state.workoutData[s.index];
     const today = new Date();
-    const sessionDate = new Date(s.fullDate.split(', ')[1]);
+    const sessionDate = getSessionDateObj(s.fullDate);
     const isPast = today > sessionDate;
     const isToday = s.index === 0;
 
@@ -3309,7 +3320,7 @@ function renderDashboard() {
     } else {
       // Show red cross only if date has passed
       const today = new Date();
-      const sessionDate = new Date(s.fullDate.split(', ')[1]); // Extract date from "Lunes, 15 jun 2026"
+      const sessionDate = getSessionDateObj(s.fullDate);
       if (today > sessionDate) {
         const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         cross.setAttribute('width', '14'); cross.setAttribute('height', '14'); cross.setAttribute('viewBox', '0 0 14 14');
@@ -4273,7 +4284,7 @@ function renderProgress() {
     const monthStr = monthNamesAbr[state.calendarMonth];
     const yearStr = state.calendarYear;
     const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
-    const sessionForDate = sessionsByDate[dateKey];
+    const sessionForDate = sessionsByDate[dateKey.toLowerCase()];
     if (sessionForDate) {
       hasSession = true;
       isDone = !!state.completedDays[sessionForDate.index];
