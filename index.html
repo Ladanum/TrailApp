@@ -5052,21 +5052,13 @@ async function initializeSupabase() {
   paintProgress();
   setView(localStorage.getItem('trailapp_view') || 'dashboard');
 
-  // Sync to cloud every 30 seconds (faster sync)
+  // Sync to cloud every 30 seconds (faster sync) - NO automatic reload
   setInterval(syncToSupabase, 30000);
 
-  // Load from cloud every 60 seconds
-  setInterval(async () => {
-    await loadFromSupabase();
-    paintDashboard();
-    paintProgress();
-  }, 60000);
-
-  // Also reload when page regains focus
+  // When page regains focus, sync silently (no visual reload unless data changed)
   window.addEventListener('focus', async () => {
     await loadFromSupabase();
-    paintDashboard();
-    paintProgress();
+    // Only update UI if there were actual changes (handled by loadFromSupabase comparison)
   });
 
   // Force sync on beforeunload to ensure data is saved before leaving
