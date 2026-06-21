@@ -4250,39 +4250,33 @@ function renderProgress() {
     days.appendChild(dc);
   }
 
-  // Map sessions by date for quick lookup
+  // Map sessions by date for quick lookup - Use index-based approach for 100% reliability
   const monthNamesAbr = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const sessionsByDate = {};
+  const sessionsByIndex = {};
 
-  console.log('🔍 BUILDING sessionsByDate... SESSIONS.length =', SESSIONS.length);
-  console.log('🔍 First 5 SESSIONS:', SESSIONS.slice(0, 5).map(s => ({index: s.index, fullDate: s.fullDate, type: s.type})));
-
+  // Build both maps for flexibility
   SESSIONS.forEach(s => {
-    // Handle both old format "15 Jun 2026" and new format "2026-06-15"
-    let dateKey;
-    if (s.fullDate.includes('-')) {
-      // ISO format: "2026-06-15"
-      const [year, month, day] = s.fullDate.split('-');
-      const monthIdx = parseInt(month) - 1;
-      const monthName = monthNamesAbr[monthIdx];
-      dateKey = parseInt(day) + ' ' + monthName + ' ' + year;
-    } else {
-      // Old format: "Miércoles, 15 Jun 2026"
-      const parts = s.fullDate.split(', ')[1]; // Get "15 Jun 2026"
-      dateKey = parts;
-    }
-    if (dateKey) {
-      const lowerKey = dateKey.toLowerCase();
-      sessionsByDate[lowerKey] = s;
-      // Log July sessions being added
-      if (lowerKey.includes('jul')) {
-        console.log(`  ✓ Added: "${lowerKey}" → index ${s.index}, type ${s.type}`);
-      }
-    }
-  });
+    sessionsByIndex[s.index] = s;
 
-  console.log('🔍 sessionsByDate keys with "jul":', Object.keys(sessionsByDate).filter(k => k.includes('jul')).sort());
-  console.log('🔍 Total sessions in sessionsByDate:', Object.keys(sessionsByDate).length);
+    // Also build date-based map for calendar lookup
+    let dateObj;
+    if (s.fullDate.includes('-')) {
+      // ISO format: "2026-07-01"
+      dateObj = new Date(s.fullDate + 'T00:00:00Z');
+    } else {
+      // Old format: "15 Jun 2026"
+      dateObj = new Date(s.fullDate);
+    }
+
+    // Use YYYYMMDD as the key for reliable string matching
+    const year = dateObj.getUTCFullYear();
+    const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getUTCDate()).padStart(2, '0');
+    const numericDateKey = year + month + day;
+
+    sessionsByDate[numericDateKey] = s;
+  });
 
   // Último día del mes
   const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
@@ -4295,20 +4289,12 @@ function renderProgress() {
     // Buscar si hay una sesión para esta fecha
     let isDone = false;
     let hasSession = false;
-    const monthStr = monthNamesAbr[state.calendarMonth];
-    const yearStr = state.calendarYear;
-    const dateKey = dayNum + ' ' + monthStr + ' ' + yearStr;
-    const lowerKey = dateKey.toLowerCase();
-    const sessionForDate = sessionsByDate[lowerKey];
 
-    // DEBUG: Log all July days to diagnose issue
-    if (state.calendarMonth === 6) {
-      if (dayNum === 1) {
-        console.log(`\n📅 RENDERIZANDO JULIO ${state.calendarYear}...`);
-        console.log(`Available keys in sessionsByDate with 'jul': `, Object.keys(sessionsByDate).filter(k => k.includes('jul')));
-      }
-      console.log(`  [${dayNum}] Buscando: "${lowerKey}" → ${sessionForDate ? '✓ ENCONTRADO ('+sessionForDate.type+')' : '✗ NO ENCONTRADO'}`);
-    }
+    // Create numeric date key in format YYYYMMDD for reliable lookup
+    const numericDateKey = String(state.calendarYear) +
+                          String(state.calendarMonth + 1).padStart(2, '0') +
+                          String(dayNum).padStart(2, '0');
+    const sessionForDate = sessionsByDate[numericDateKey];
 
     if (sessionForDate) {
       hasSession = true;
