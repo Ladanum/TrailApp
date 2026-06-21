@@ -667,6 +667,8 @@ const state = {
   showingRaceForm: false,
   shoes: JSON.parse(localStorage.getItem('trailapp_shoes') || '[]'),
   username: null,
+  calendarMonth: new Date().getMonth(),
+  calendarYear: new Date().getFullYear(),
   strengthVariant: localStorage.getItem('trailapp_strength_variant') || 'con-equipamiento',
 };
 
@@ -2000,44 +2002,66 @@ function renderProgress() {
   // Calendar + checkpoints
   const g2 = el('div', { class: 'prog-grid2' });
 
-  // Calendar - show current week
+  // Calendar - navigable by month
   const currentDate = new Date();
   const currentDay = currentDate.getDate();
-  const currentMonth = currentDate.getMonth() + 1; // 1-12
+  const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const weekStart = new Date('2026-06-15');
-  weekStart.setDate(weekStart.getDate() + (currentWeekClamped - 1) * 7);
-  const monthNames = ['', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
-  const monthHeader = monthNames[weekStart.getMonth() + 1] + ' ' + weekStart.getFullYear();
+  const monthNames = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
+  const monthHeader = monthNames[state.calendarMonth] + ' ' + state.calendarYear;
 
-  const cal = el('div', { class: 'cal-wrap' },
-    el('div', { class: 'cal-header' }, monthHeader),
-    el('div', { style: 'font-size:11px;color:#8B949E;padding:8px 0;text-align:center;border-bottom:1px solid #21262D;margin-bottom:8px' },
-      '📍 Mesociclo: ' + currentMeso.id + ' — ' + currentMeso.name
-    )
-  );
+  const cal = el('div', { class: 'cal-wrap' });
+
+  // Header con botones de navegación
+  const calHeader = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #21262D' });
+  const prevBtn = el('button', { style: 'background:none;border:none;color:#3FB950;cursor:pointer;font-weight:600;padding:4px 8px' }, '← Anterior');
+  prevBtn.addEventListener('click', () => {
+    if (state.calendarMonth === 5 && state.calendarYear === 2026) return; // No ir antes de junio 2026
+    state.calendarMonth--;
+    if (state.calendarMonth < 0) { state.calendarMonth = 11; state.calendarYear--; }
+    paintProgress();
+  });
+
+  const nextBtn = el('button', { style: 'background:none;border:none;color:#3FB950;cursor:pointer;font-weight:600;padding:4px 8px' }, 'Siguiente →');
+  nextBtn.addEventListener('click', () => {
+    if (state.calendarMonth === 5 && state.calendarYear === 2027) return; // No ir después de junio 2027
+    state.calendarMonth++;
+    if (state.calendarMonth > 11) { state.calendarMonth = 0; state.calendarYear++; }
+    paintProgress();
+  });
+
+  calHeader.appendChild(prevBtn);
+  calHeader.appendChild(el('div', { style: 'font-size:11px;font-weight:600;color:#E6EDF3' }, monthHeader));
+  calHeader.appendChild(nextBtn);
+  cal.appendChild(calHeader);
+
   const dow = el('div', { class: 'cal-dow' });
   ['L','M','X','J','V','S','D'].forEach(d => dow.appendChild(el('div', { class: 'cal-dow-cell' }, d)));
   cal.appendChild(dow);
   const days = el('div', { class: 'cal-days' });
 
-  const firstDay = new Date(weekStart);
+  // Primer día del mes
+  const firstDay = new Date(state.calendarYear, state.calendarMonth, 1);
   const startDate = new Date(firstDay);
   startDate.setDate(startDate.getDate() - firstDay.getDay());
 
-  for (let d = 0; d < 42; d++) {
-    const currDate = new Date(startDate);
-    currDate.setDate(currDate.getDate() + d);
-    const isInCurrentWeek = currDate.getTime() >= weekStart.getTime() && currDate.getTime() < new Date(weekStart.getTime() + 7*24*60*60*1000).getTime();
-    const dayIdx = isInCurrentWeek ? (currDate.getDate() - weekStart.getDate()) : null;
-    const isDone = dayIdx !== null && dayIdx >= 0 && dayIdx < 7 && !!state.completedDays[dayIdx];
-    const isToday = (currentMonth === currDate.getMonth() + 1 && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
+  // Último día del mes
+  const lastDay = new Date(state.calendarYear, state.calendarMonth + 1, 0);
+  const endDate = new Date(lastDay);
+  endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+
+  // Generar todos los días
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const currDate = new Date(d);
+    const isCurrentMonth = currDate.getMonth() === state.calendarMonth;
+    const isDone = isCurrentMonth && !!state.completedDays[currDate.getDate() - 1];
+    const isToday = (currentMonth === currDate.getMonth() && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
 
     const dc = el('div', { class: 'cal-day' }, String(currDate.getDate()));
     dc.style.background = isToday ? '#3FB950' : (isDone ? 'rgba(63,185,80,0.2)' : 'transparent');
-    dc.style.border = isToday ? '2px solid #52cb63' : (isInCurrentWeek ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent');
-    dc.style.color = isToday ? '#0D1117' : (isDone ? '#3FB950' : (isInCurrentWeek ? '#E6EDF3' : 'rgba(139,148,158,0.4)'));
+    dc.style.border = isToday ? '2px solid #52cb63' : (isCurrentMonth ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent');
+    dc.style.color = isToday ? '#0D1117' : (isDone ? '#3FB950' : (isCurrentMonth ? '#E6EDF3' : 'rgba(139,148,158,0.4)'));
     dc.style.fontWeight = isToday ? '700' : (isDone ? '600' : '400');
     days.appendChild(dc);
   }
