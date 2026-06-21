@@ -4243,8 +4243,20 @@ function renderProgress() {
   const monthNamesAbr = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const sessionsByDate = {};
   SESSIONS.forEach(s => {
-    const parts = s.fullDate.split(', ')[1]; // Get "15 jun 2026"
-    if (parts) sessionsByDate[parts.toLowerCase()] = s;
+    // Handle both old format "15 Jun 2026" and new format "2026-06-15"
+    let dateKey;
+    if (s.fullDate.includes('-')) {
+      // ISO format: "2026-06-15"
+      const [year, month, day] = s.fullDate.split('-');
+      const monthIdx = parseInt(month) - 1;
+      const monthName = monthNamesAbr[monthIdx];
+      dateKey = parseInt(day) + ' ' + monthName + ' ' + year;
+    } else {
+      // Old format: "Miércoles, 15 Jun 2026"
+      const parts = s.fullDate.split(', ')[1]; // Get "15 Jun 2026"
+      dateKey = parts;
+    }
+    if (dateKey) sessionsByDate[dateKey.toLowerCase()] = s;
   });
 
   // Último día del mes
