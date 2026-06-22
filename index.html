@@ -3276,10 +3276,17 @@ function renderDashboard() {
   wrap.appendChild(pb);
 
   // Calculate current week (weeks start on Monday)
-  const planStart = new Date('2026-06-16'); // Monday 16 June
+  const planStart = new Date('2026-06-15'); // Plan starts Sunday 15 June
   const today = new Date();
-  const daysDiff = Math.floor((today - planStart) / (1000 * 60 * 60 * 24));
-  const currentWeekIndex = Math.floor(daysDiff / 7) * 7;
+
+  // Find this week's Monday
+  const dayOfWeek = today.getUTCDay(); // 0=Sunday, 1=Monday, etc.
+  const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days to go back to Monday
+  const thisMonday = new Date(today);
+  thisMonday.setUTCDate(today.getUTCDate() - daysToMonday);
+
+  const daysDiff = Math.floor((thisMonday - planStart) / (1000 * 60 * 60 * 24));
+  const currentWeekIndex = daysDiff; // Starting index for this week
   const weekSessions = SESSIONS.filter(s => s.index >= currentWeekIndex && s.index < currentWeekIndex + 7);
 
   console.log(`📅 Dashboard: today=${today.toDateString()}, daysDiff=${daysDiff}, currentWeekIndex=${currentWeekIndex}, showing ${weekSessions.length} sessions`);
