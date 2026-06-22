@@ -9217,14 +9217,17 @@ function renderDashboard() {
   let totalElevation = 0;
   let totalTime = 0;
 
-  // Sum completed sessions from this week
+  // Sum ALL sessions from this week (regardless of completion) for time, but real distance/elev only for completed
   Object.values(sessionsByDate).flat().forEach(s => {
+    // Time: sum programmed duration for ALL sessions
+    totalTime += parseInt(s.duration) || 0;
+
+    // Distance & Elevation: sum only for completed sessions
     if (state.completedDays[s.index]) {
       const data = state.workoutData[s.index];
       if (data) {
         totalDistance += parseFloat(data.distance) || 0;
         totalElevation += parseInt(data.elevation) || 0;
-        totalTime += parseInt(data.duration) || 0;
       }
     }
   });
