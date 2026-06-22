@@ -9061,9 +9061,13 @@ function renderDashboard() {
 
     if (done && data) {
       const metricsDiv = el('div', { style: 'display:flex;flex-direction:column;gap:6px;flex:1;margin:8px 0' });
+
+      // Core metrics
       if (data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, data.distance + ' km'));
       if (data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
       if (data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, data.elevation + ' m'));
+
+      // Pace calculation
       if (data.distance && data.duration) {
         const ritmoDecimal = data.duration / data.distance;
         const minutos = Math.floor(ritmoDecimal);
@@ -9071,7 +9075,24 @@ function renderDashboard() {
         const ritmoMedio = minutos + ':' + (segundos < 10 ? '0' : '') + segundos;
         metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
       }
+
+      // Additional data from questionnaire
+      if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'FC: ' + data.hr + ' bpm'));
+      if (data.zone) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#79C0FF;font-family:monospace' }, data.zone));
       if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
+      if (data.shoe) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#8B949E;font-family:monospace' }, '👟 ' + data.shoe));
+
+      // Notes
+      if (data.notes) metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#8B949E;margin-top:6px;padding-top:6px;border-top:1px solid rgba(139,148,158,0.2)' }, data.notes));
+
+      // Exercises (for Strength/Recovery)
+      if (data.exercises && data.exercises.length > 0) {
+        metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#8B949E;margin-top:6px;padding-top:6px;border-top:1px solid rgba(139,148,158,0.2)' }, 'Ejercicios:'));
+        data.exercises.forEach(ex => {
+          metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#A371F7;margin-top:2px;margin-left:8px' }, ex.name + ' · ' + ex.setsCompleted + '×' + ex.repsCompleted));
+        });
+      }
+
       card.appendChild(metricsDiv);
 
       const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
