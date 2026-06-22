@@ -9049,6 +9049,11 @@ function renderDashboard() {
     card.appendChild(top);
     card.appendChild(el('div', { class: 'card-date' }, s.date));
 
+    // Show activity type badge
+    if (done && data && data.activityType) {
+      card.appendChild(el('span', { class: 'badge badge-quality' }, data.activityType.toUpperCase()));
+    }
+
     // Show description for gym/rec workouts
     if (done && (s.cat === 'gym' || s.cat === 'rec')) {
       card.appendChild(el('div', { class: 'card-desc' }, s.description));
@@ -9066,9 +9071,7 @@ function renderDashboard() {
         const ritmoMedio = minutos + ':' + (segundos < 10 ? '0' : '') + segundos;
         metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, 'ø ' + ritmoMedio + ' min/km'));
       }
-      if (data.hr) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#A371F7;font-family:monospace' }, data.hr + ' bpm'));
       if (data.sensaciones) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#E6EDF3;font-family:monospace' }, 'Sen: ' + data.sensaciones + '/5'));
-      if (data.activityType) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#79C0FF;font-family:monospace;font-weight:600' }, data.activityType));
       card.appendChild(metricsDiv);
 
       const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
@@ -9212,22 +9215,19 @@ function renderDashboard() {
   );
   wrap.appendChild(plannedStats);
 
-  // Calculate real weekly stats (only current week sessions + this week's extra activities)
+  // Calculate real weekly stats (only completed sessions + this week's extra activities)
   let totalDistance = 0;
   let totalElevation = 0;
   let totalTime = 0;
 
-  // Sum ALL sessions from this week (regardless of completion) for time, but real distance/elev only for completed
+  // Sum only COMPLETED sessions
   Object.values(sessionsByDate).flat().forEach(s => {
-    // Time: sum programmed duration for ALL sessions
-    totalTime += parseInt(s.duration) || 0;
-
-    // Distance & Elevation: sum only for completed sessions
     if (state.completedDays[s.index]) {
       const data = state.workoutData[s.index];
       if (data) {
         totalDistance += parseFloat(data.distance) || 0;
         totalElevation += parseInt(data.elevation) || 0;
+        totalTime += parseInt(data.duration) || 0;
       }
     }
   });
