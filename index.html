@@ -2738,6 +2738,7 @@ const state = {
   calendarMonth: new Date().getMonth(),
   calendarYear: new Date().getFullYear(),
   strengthVariant: localStorage.getItem('trailapp_strength_variant') || 'con-equipamiento',
+  dashboardWeekOffset: 0, // 0 = current week, -1 = previous week, 1 = next week
 };
 
 async function syncToSupabase() {
@@ -3246,6 +3247,31 @@ function renderDashboard() {
   mtn.appendChild(path);
   wrap.appendChild(mtn);
 
+  // Week navigation buttons
+  const weekNavContainer = el('div', { style: 'display:flex;gap:12px;margin-bottom:16px;justify-content:center' });
+
+  const prevWeekBtn = el('button', { style: 'padding:8px 16px;background:transparent;border:1px solid #21262D;border-radius:6px;color:#3FB950;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.2s' });
+  prevWeekBtn.textContent = '← Semana Anterior';
+  prevWeekBtn.addEventListener('click', () => {
+    state.dashboardWeekOffset--;
+    paintDashboard();
+  });
+  prevWeekBtn.addEventListener('mouseover', () => prevWeekBtn.style.background = 'rgba(63,185,80,0.1)');
+  prevWeekBtn.addEventListener('mouseout', () => prevWeekBtn.style.background = 'transparent');
+  weekNavContainer.appendChild(prevWeekBtn);
+
+  const nextWeekBtn = el('button', { style: 'padding:8px 16px;background:transparent;border:1px solid #21262D;border-radius:6px;color:#3FB950;cursor:pointer;font-weight:600;font-size:12px;transition:all 0.2s' });
+  nextWeekBtn.textContent = 'Semana Siguiente →';
+  nextWeekBtn.addEventListener('click', () => {
+    state.dashboardWeekOffset++;
+    paintDashboard();
+  });
+  nextWeekBtn.addEventListener('mouseover', () => nextWeekBtn.style.background = 'rgba(63,185,80,0.1)');
+  nextWeekBtn.addEventListener('mouseout', () => nextWeekBtn.style.background = 'transparent');
+  weekNavContainer.appendChild(nextWeekBtn);
+
+  wrap.appendChild(weekNavContainer);
+
   // Add extra activity button
   const addBtn = el('button', { style: 'margin-bottom:20px;padding:12px 16px;background:#3FB950;border:none;border-radius:6px;color:#0D1117;font-weight:600;font-size:13px;cursor:pointer;transition:background 0.2s' });
   addBtn.textContent = '➕ Agregar Actividad Extra';
@@ -3288,7 +3314,10 @@ function renderDashboard() {
   thisMonday.setUTCDate(todayMidnightUTC.getUTCDate() - daysToMonday);
 
   const daysDiff = Math.floor((thisMonday - planStart) / (1000 * 60 * 60 * 24));
-  const currentWeekIndex = daysDiff; // Starting index for this week
+  const baseWeekIndex = daysDiff;
+
+  // Apply offset for week navigation
+  const currentWeekIndex = baseWeekIndex + (state.dashboardWeekOffset * 7);
   const weekSessions = SESSIONS.filter(s => s.index >= currentWeekIndex && s.index < currentWeekIndex + 7);
 
   console.log(`📅 Dashboard: today=${today.toDateString()}, daysDiff=${daysDiff}, currentWeekIndex=${currentWeekIndex}, showing ${weekSessions.length} sessions`);
