@@ -8276,6 +8276,10 @@ const RACES = [
   { id: 11, name: 'Ultra 80K · Sub 11h', date: '2027-06-12', mesociclo: 'M4.3', distance: 80, elevation: 4000, timeMin: 660, timeMax: 660, ritmoMin: 8.25, ritmoMax: 8.25, type: 'race', checkpoint: 'RACE', objetivo: 'CARRERA OBJETIVO: Ultra 80K Sub 11h', criterio: 'Objetivo: completar en menos de 11h a ritmo <8:15 min/km' },
 ];
 
+// ─── PLAN CONSTANTS ─────────────────────────────────────────────────────────
+const PLAN_START_DATE = new Date('2026-06-15T00:00:00Z');
+const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
 // Theoretical weekly plan for 52 weeks (Ultra 80K)
 const WEEKS_PLAN = [
   // MF1: Base acelerada (weeks 1-6)
@@ -8295,8 +8299,7 @@ const WEEKS_PLAN = [
   {week:39, vol:38, elev:400},   {week:40, vol:35, elev:350},   {week:41, vol:32, elev:300},   {week:42, vol:30, elev:250},
   {week:43, vol:28, elev:200},   {week:44, vol:25, elev:150},   {week:45, vol:22, elev:100},   {week:46, vol:20, elev:80},
   {week:47, vol:15, elev:50},    {week:48, vol:10, elev:30},    {week:49, vol:8, elev:20},     {week:50, vol:5, elev:10},
-  {week:51, vol:2, elev:5},      {week:52, vol:80, elev:4000},
-  {week:49, vol:24, elev:600},   {week:50, vol:18, elev:400},   {week:51, vol:12, elev:200},   {week:52, vol:0,  elev:0},
+  {week:51, vol:2, elev:5},      {week:52, vol:80, elev:4000}
 ];
 
 // ─── SUPABASE CLIENT ─────────────────────────────────────────────────────────
@@ -10308,39 +10311,30 @@ function updateProgressCharts(macrocycle = selectedMacrocycle) {
   const range = macrocycleRanges[macrocycle] || macrocycleRanges['MF1'];
   const filteredWeeks = WEEKS_PLAN.filter(w => w.week >= range.start && w.week <= range.end);
 
-  // Function to calculate week stats from sessions by date range
-  function getWeekStats(weekNum) {
-    const weekPlan = WEEKS_PLAN.find(w => w.week === weekNum);
-    if (!weekPlan) return { vol: 0, elev: 0, tlRitmo: null, tlDuration: 0 };
+  // Pre-compute stats for all filtered weeks (not per-chart)
+  const weekStats = {};
+  filteredWeeks.forEach(w => {
+    const weekPlan = w;
+    let vol = 0, elev = 0, tlDistance = 0, tlDuration = 0;
 
-    let vol = 0, elev = 0;
-    let tlDistance = 0, tlDuration = 0;
-
-    // Get Monday of that week
-    const baseDate = new Date('2026-06-15T00:00:00Z');
-    const weekStart = new Date(baseDate.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000);
+    const weekStart = new Date(PLAN_START_DATE.getTime() + (w.week - 1) * MS_PER_WEEK);
     const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
 
-    // Find all sessions for this week
+    // Sum sessions for this week
     SESSIONS.forEach(s => {
       if (!state.completedDays[s.index]) return;
-
       const sDate = new Date(s.fullDate + 'T00:00:00Z');
-      if (sDate >= weekStart && sDate <= weekEnd) {
-        const data = state.workoutData[s.index];
-        if (data) {
-          const dist = parseFloat(data.distance) || 0;
-          const elev_m = parseInt(data.elevation) || 0;
+      if (sDate < weekStart || sDate > weekEnd) return;
 
-          vol += dist;
-          elev += elev_m;
+      const data = state.workoutData[s.index];
+      if (!data) return;
 
-          // Track TL (Tirada Larga - type TL)
-          if (s.type === 'TL' && data.distance && data.duration) {
-            tlDistance = parseFloat(data.distance);
-            tlDuration = parseInt(data.duration);
-          }
-        }
+      vol += parseFloat(data.distance) || 0;
+      elev += parseInt(data.elevation) || 0;
+
+      if (s.type === 'TL' && data.distance && data.duration) {
+        tlDistance = parseFloat(data.distance);
+        tlDuration = parseInt(data.duration);
       }
     });
 
@@ -10353,39 +10347,22 @@ function updateProgressCharts(macrocycle = selectedMacrocycle) {
       }
     });
 
-    const tlRitmo = (tlDistance && tlDuration) ? parseFloat((tlDuration / tlDistance).toFixed(2)) : null;
-    return {
-      vol: vol,
-      elev: elev,
-      tlRitmo: tlRitmo,
-      tlDuration: tlDuration / 60 // Convert to hours
+    weekStats[w.week] = {
+      vol: vol || null,
+      elev: elev || null,
+      tlRitmo: (tlDistance && tlDuration) ? parseFloat((tlDuration / tlDistance).toFixed(2)) : null,
+      tlDuration: tlDuration ? tlDuration / 60 : null
     };
-  }
-
-  // Build chart data
-  const volReal = filteredWeeks.map(w => {
-    const stats = getWeekStats(w.week);
-    return stats.vol > 0 ? stats.vol : null;
   });
+
+  // Build chart data from cached stats
+  const volReal = filteredWeeks.map(w => weekStats[w.week].vol);
   const volTeor = filteredWeeks.map(w => w.vol);
-
-  const elevReal = filteredWeeks.map(w => {
-    const stats = getWeekStats(w.week);
-    return stats.elev > 0 ? stats.elev : null;
-  });
+  const elevReal = filteredWeeks.map(w => weekStats[w.week].elev);
   const elevTeor = filteredWeeks.map(w => w.elev);
-
-  const ritmo = filteredWeeks.map(w => {
-    const stats = getWeekStats(w.week);
-    return stats.tlRitmo;
-  });
-
-  const duracion = filteredWeeks.map(w => {
-    const stats = getWeekStats(w.week);
-    return stats.tlDuration > 0 ? stats.tlDuration : null;
-  });
-
-  const duracionTeor = filteredWeeks.map(w => w.tlDuration || 2.5);
+  const ritmo = filteredWeeks.map(w => weekStats[w.week].tlRitmo);
+  const duracion = filteredWeeks.map(w => weekStats[w.week].tlDuration);
+  const duracionTeor = filteredWeeks.map(w => (w.week >= 45 ? 2 : w.week >= 29 ? 3.5 : w.week >= 13 ? 3 : 2.5));
   const weeks = filteredWeeks.map(w => 'S' + w.week);
 
   const chartOpts = {
