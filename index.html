@@ -3525,11 +3525,12 @@ function renderDashboard() {
   );
   wrap.appendChild(plannedStats);
 
-  // Calculate real weekly stats (only current week sessions)
+  // Calculate real weekly stats (only current week sessions + this week's extra activities)
   let totalDistance = 0;
   let totalElevation = 0;
   let totalTime = 0;
 
+  // Sum completed sessions from this week
   weekSessions.forEach(s => {
     if (state.completedDays[s.index]) {
       const data = state.workoutData[s.index];
@@ -3541,10 +3542,20 @@ function renderDashboard() {
     }
   });
 
+  // Calculate week's date range (same as thisWeekExtras logic)
+  const weekStartForStats = new Date(Date.UTC(2026, 5, 15)); // June 15, 2026
+  weekStartForStats.setUTCDate(weekStartForStats.getUTCDate() + currentWeekIndex);
+  const weekEndForStats = new Date(weekStartForStats);
+  weekEndForStats.setUTCDate(weekEndForStats.getUTCDate() + 6);
+
+  // Sum only this week's extra activities
   state.extraActivities.forEach(act => {
-    totalDistance += parseFloat(act.data.distance) || 0;
-    totalElevation += parseInt(act.data.elevation) || 0;
-    totalTime += parseInt(act.duration) || 0;
+    const actDate = new Date(act.date + 'T00:00:00Z');
+    if (actDate >= weekStartForStats && actDate <= weekEndForStats) {
+      totalDistance += parseFloat(act.data.distance) || 0;
+      totalElevation += parseInt(act.data.elevation) || 0;
+      totalTime += parseInt(act.duration) || 0;
+    }
   });
 
   const hours = Math.floor(totalTime / 60);
