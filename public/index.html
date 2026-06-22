@@ -9064,7 +9064,7 @@ function renderDashboard() {
       if (data.distance) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#3FB950;font-family:monospace' }, data.distance + ' km'));
       if (data.duration) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#388BFD;font-family:monospace' }, data.duration + ' min'));
       if (data.elevation) metricsDiv.appendChild(el('div', { style: 'font-size:11px;color:#F0883E;font-family:monospace' }, data.elevation + ' m'));
-      if (data.distance && data.duration && (s.cat === 'zone' || s.cat === 'tl')) {
+      if (data.distance && data.duration) {
         const ritmoDecimal = data.duration / data.distance;
         const minutos = Math.floor(ritmoDecimal);
         const segundos = Math.round((ritmoDecimal - minutos) * 60);
