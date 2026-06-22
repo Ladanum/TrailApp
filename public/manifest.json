@@ -1,0 +1,19 @@
+{
+  "name": "TrailApp — Ultra 80K",
+  "short_name": "TrailApp",
+  "description": "App de entrenamiento de trail running con sincronización en línea",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f5f5",
+  "theme_color": "#3FB950",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%233FB950' width='192' height='192'/><text x='96' y='108' dominant-baseline='middle' text-anchor='middle' font-family='system-ui, -apple-system, sans-serif' font-size='110' font-weight='800' fill='white'>T</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
