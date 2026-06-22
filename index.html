@@ -3542,15 +3542,6 @@ function renderDashboard() {
   let plannedDistance = 0;
   let plannedElevation = 0;
 
-  console.log(`📊 Week ${weekNumber} sessions:`, weekSessions.map(s => ({
-    index: s.index,
-    date: s.fullDate,
-    type: s.type,
-    duration: s.duration,
-    elevationGain: s.elevationGain,
-    infoElevation: s.info?.elevation
-  })));
-
   weekSessions.forEach(s => {
     const duration = parseInt(s.duration) || 0;
     plannedTime += duration;
@@ -3558,20 +3549,17 @@ function renderDashboard() {
     // Add elevation if available
     if (s.elevationGain) {
       plannedElevation += parseInt(s.elevationGain) || 0;
-      console.log(`  ✓ ${s.type} (${s.fullDate}): +${s.elevationGain}m`);
     }
   });
-
-  console.log(`📊 Total: ${plannedTime}min, ${plannedElevation}m elevation`);
 
   const plannedHours = Math.floor(plannedTime / 60);
   const plannedMins = plannedTime % 60;
   const plannedTimeStr = plannedHours > 0 ? `${plannedHours}h ${plannedMins}min` : `${plannedMins}min`;
 
-  // Planned stats - use WEEKS_PLAN for distance/elevation targets, actual time from sessions
+  // Planned stats - use actual values from sessions
   const plannedStats = el('div', { class: 'stat-grid' },
     makeStatCard('Volumen sem.', weekPlan.vol + ' km', 'distancia planificada', '#8B949E'),
-    makeStatCard('D+ acumulado', weekPlan.elev + ' m', 'desnivel planificado', '#8B949E'),
+    makeStatCard('D+ acumulado', plannedElevation + ' m', 'desnivel programado', '#8B949E'),
     makeStatCard('Tiempo programado', plannedTimeStr, 'suma estimada de sesiones', '#8B949E')
   );
   wrap.appendChild(plannedStats);
