@@ -3534,19 +3534,29 @@ function renderDashboard() {
     }
   }
 
-  // Calculate planned weekly stats (week 1)
-  const weekPlan = WEEKS_PLAN[0]; // Week 1
+  // Calculate planned weekly stats for the current week being viewed
+  const weekNumber = Math.floor(currentWeekIndex / 7) + 1; // Convert index to week number (1-based)
+  const weekPlan = WEEKS_PLAN[weekNumber - 1] || WEEKS_PLAN[0]; // Get plan for this week, fallback to week 1
+
   let plannedTime = 0;
+  let plannedDistance = 0;
+  let plannedElevation = 0;
+
   weekSessions.forEach(s => {
     const duration = parseInt(s.duration) || 0;
     plannedTime += duration;
+
+    // Add elevation if available
+    if (s.elevationGain) {
+      plannedElevation += s.elevationGain;
+    }
   });
 
   const plannedHours = Math.floor(plannedTime / 60);
   const plannedMins = plannedTime % 60;
   const plannedTimeStr = plannedHours > 0 ? `${plannedHours}h ${plannedMins}min` : `${plannedMins}min`;
 
-  // Planned stats
+  // Planned stats - use WEEKS_PLAN for distance/elevation targets, actual time from sessions
   const plannedStats = el('div', { class: 'stat-grid' },
     makeStatCard('Volumen sem.', weekPlan.vol + ' km', 'distancia planificada', '#8B949E'),
     makeStatCard('D+ acumulado', weekPlan.elev + ' m', 'desnivel planificado', '#8B949E'),
