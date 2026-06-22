@@ -3571,9 +3571,14 @@ function makeStatCard(label, val, sub, color) {
 }
 
 function renderSession(idx) {
-  const s = SESSIONS[idx];
-  const done = !!state.completedDays[s.index];
-  const wrap = el('div', { class: 'detail-wrap' });
+  try {
+    const s = SESSIONS[idx];
+    if (!s) {
+      console.error('❌ renderSession: SESSIONS[' + idx + '] is undefined');
+      return el('div', { style: 'padding: 20px; color: #f05858' }, 'Error: Sesión no encontrada');
+    }
+    const done = !!state.completedDays[s.index];
+    const wrap = el('div', { class: 'detail-wrap' });
 
   // Si es un entreno de fuerza con variantes, usar la variante seleccionada
   if (s.blocksVariants) {
@@ -4029,7 +4034,11 @@ function renderSession(idx) {
     }
   }
 
-  return wrap;
+    return wrap;
+  } catch (err) {
+    console.error('❌ Error in renderSession:', err);
+    return el('div', { style: 'padding: 20px; color: #f05858' }, 'Error al cargar sesión: ' + err.message);
+  }
 }
 
 function renderProgressTable() {
