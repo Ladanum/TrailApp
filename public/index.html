@@ -9054,8 +9054,8 @@ function renderDashboard() {
       card.appendChild(el('span', { class: 'badge badge-quality' }, data.activityType.toUpperCase()));
     }
 
-    // Show description for gym/rec workouts
-    if (done && (s.cat === 'gym' || s.cat === 'rec')) {
+    // Show description for strength/recovery workouts
+    if (done && (s.cat === 'Strength' || s.cat === 'Recovery')) {
       card.appendChild(el('div', { class: 'card-desc' }, s.description));
     }
 
@@ -9628,7 +9628,7 @@ function renderSession(idx) {
         data.zone = formFields.zone.value || '';
         data.shoe = formFields.shoe.value || '';
         data.notes = formFields.notes.value;
-      } else if (s.cat === 'gym' || s.cat === 'rec') {
+      } else if (s.cat === 'Strength' || s.cat === 'Recovery') {
         const exercises = [];
         const exerciseInputs = form.querySelectorAll('input[type="number"], input[type="text"]');
         let inputIdx = 0;
@@ -9646,7 +9646,7 @@ function renderSession(idx) {
         }
         data.exercises = exercises;
         data.duration = parseInt(formFields.duration.value) || 0;
-        data.activityType = s.cat === 'gym' ? 'Fuerza' : 'Movilidad';
+        data.activityType = s.cat === 'Strength' ? 'Fuerza' : 'Movilidad';
         data.shoe = formFields.shoe.value || '';
         data.notes = formFields.notes.value;
       }
@@ -9726,8 +9726,8 @@ function renderSession(idx) {
         resultsCard.appendChild(resultsGrid);
       }
 
-      // Gym/Rec results
-      if ((s.cat === 'gym' || s.cat === 'rec') && data.exercises) {
+      // Strength/Recovery results
+      if ((s.cat === 'Strength' || s.cat === 'Recovery') && data.exercises) {
         data.exercises.forEach(ex => {
           resultsCard.appendChild(el('div', { style: 'padding:8px;background:rgba(163,113,247,0.05);border:1px solid rgba(163,113,247,0.15);border-radius:4px;margin-bottom:8px;font-size:11px' },
             el('div', { style: 'color:#E6EDF3;font-weight:500;margin-bottom:4px' }, ex.name),
@@ -10141,9 +10141,9 @@ function renderProgress() {
           macroDistance += parseFloat(data.distance) || 0;
           macroElevation += parseInt(data.elevation) || 0;
 
-          if (s.cat === 'zone' || s.cat === 'tl') {
+          if (s.cat === 'Endurance' || s.cat === 'Trail Running') {
             macroExterior += parseInt(data.duration) || 0;
-          } else if (s.cat === 'gym' || s.cat === 'rec') {
+          } else if (s.cat === 'Strength' || s.cat === 'Recovery') {
             macroStrength += parseInt(data.duration) || 0;
           }
         }
