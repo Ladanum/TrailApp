@@ -3426,17 +3426,32 @@ function renderDashboard() {
   resultsSection.appendChild(resultsScroll);
   wrap.appendChild(resultsSection);
 
-  // Extra Activities section (right after results)
+  // Extra Activities section (right after results) - only show this week's activities
   if (state.extraActivities.length > 0) {
-    extrasSection = el('div', {});
-    extrasSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Actividades Extra'));
-    const extrasScroll = el('div', { class: 'week-scroll' });
-    const extrasGrid = el('div', { class: 'week-grid' });
+    // Get week start and end dates
+    const weekStartSession = SESSIONS[currentWeekIndex];
+    const weekEndSession = SESSIONS[currentWeekIndex + 6];
+    const weekStart = new Date(Date.UTC(2026, 5, 15)); // June 15, 2026
+    weekStart.setUTCDate(weekStart.getUTCDate() + currentWeekIndex);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
 
-    // Sort extra activities by date
-    const sortedExtras = [...state.extraActivities].sort((a, b) => new Date(a.date + 'T00:00:00Z') - new Date(b.date + 'T00:00:00Z'));
+    // Filter extra activities for this week only
+    const thisWeekExtras = state.extraActivities.filter(act => {
+      const actDate = new Date(act.date + 'T00:00:00Z');
+      return actDate >= weekStart && actDate <= weekEnd;
+    });
 
-    sortedExtras.forEach(act => {
+    if (thisWeekExtras.length > 0) {
+      extrasSection = el('div', {});
+      extrasSection.appendChild(el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Actividades Extra'));
+      const extrasScroll = el('div', { class: 'week-scroll' });
+      const extrasGrid = el('div', { class: 'week-grid' });
+
+      // Sort extra activities by date
+      const sortedExtras = [...thisWeekExtras].sort((a, b) => new Date(a.date + 'T00:00:00Z') - new Date(b.date + 'T00:00:00Z'));
+
+      sortedExtras.forEach(act => {
       const card = el('div', { class: 'session-card done', style: 'opacity:0.9' });
       const dateObj = new Date(act.date + 'T00:00:00Z');
       const dayStr = dateObj.toLocaleDateString('es-ES', {weekday:'short'}).substring(0,3).toUpperCase();
@@ -3482,11 +3497,12 @@ function renderDashboard() {
       card.appendChild(btnDiv);
 
       extrasGrid.appendChild(card);
-    });
+      });
 
-    extrasScroll.appendChild(extrasGrid);
-    extrasSection.appendChild(extrasScroll);
-    wrap.appendChild(extrasSection);
+      extrasScroll.appendChild(extrasGrid);
+      extrasSection.appendChild(extrasScroll);
+      wrap.appendChild(extrasSection);
+    }
   }
 
   // Calculate planned weekly stats (week 1)
