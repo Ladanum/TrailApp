@@ -10300,65 +10300,92 @@ function updateProgressCharts(macrocycle = selectedMacrocycle) {
 
   // Get week range for selected macrocycle
   const macrocycleRanges = {
-    'MF1': { start: 1, end: 12 },
-    'MF2': { start: 13, end: 28 },
-    'MF3': { start: 29, end: 44 },
-    'MF4': { start: 45, end: 52 }
+    'MF1': { start: 1, end: 6 },
+    'MF2': { start: 7, end: 14 },
+    'MF3': { start: 15, end: 30 },
+    'MF4': { start: 31, end: 52 }
   };
   const range = macrocycleRanges[macrocycle] || macrocycleRanges['MF1'];
   const filteredWeeks = WEEKS_PLAN.filter(w => w.week >= range.start && w.week <= range.end);
 
-  // Calculate current week volume from completed workouts (sum all sessions)
-  let weekVolume = 0, weekElev = 0;
-  for (let i = 0; i < 7; i++) {
-    if (state.workoutData[i]) {
-      const d = state.workoutData[i];
-      weekVolume += parseFloat(d.distance) || 0;
-      weekElev += parseInt(d.elevation) || 0;
-    }
+  // Function to calculate week stats from sessions by date range
+  function getWeekStats(weekNum) {
+    const weekPlan = WEEKS_PLAN.find(w => w.week === weekNum);
+    if (!weekPlan) return { vol: 0, elev: 0, tlRitmo: null, tlDuration: 0 };
+
+    let vol = 0, elev = 0;
+    let tlDistance = 0, tlDuration = 0;
+
+    // Get Monday of that week
+    const baseDate = new Date('2026-06-15T00:00:00Z');
+    const weekStart = new Date(baseDate.getTime() + (weekNum - 1) * 7 * 24 * 60 * 60 * 1000);
+    const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+    // Find all sessions for this week
+    SESSIONS.forEach(s => {
+      if (!state.completedDays[s.index]) return;
+
+      const sDate = new Date(s.fullDate + 'T00:00:00Z');
+      if (sDate >= weekStart && sDate <= weekEnd) {
+        const data = state.workoutData[s.index];
+        if (data) {
+          const dist = parseFloat(data.distance) || 0;
+          const elev_m = parseInt(data.elevation) || 0;
+
+          vol += dist;
+          elev += elev_m;
+
+          // Track TL (Tirada Larga - type TL)
+          if (s.type === 'TL' && data.distance && data.duration) {
+            tlDistance = parseFloat(data.distance);
+            tlDuration = parseInt(data.duration);
+          }
+        }
+      }
+    });
+
+    // Add extra activities for this week
+    state.extraActivities.forEach(act => {
+      const actDate = new Date(act.date + 'T00:00:00Z');
+      if (actDate >= weekStart && actDate <= weekEnd) {
+        vol += parseFloat(act.data.distance) || 0;
+        elev += parseInt(act.data.elevation) || 0;
+      }
+    });
+
+    const tlRitmo = (tlDistance && tlDuration) ? parseFloat((tlDuration / tlDistance).toFixed(2)) : null;
+    return {
+      vol: vol,
+      elev: elev,
+      tlRitmo: tlRitmo,
+      tlDuration: tlDuration / 60 // Convert to hours
+    };
   }
 
-  // Add extra activities to volume/elevation
-  state.extraActivities.forEach(act => {
-    weekVolume += parseFloat(act.data.distance) || 0;
-    weekElev += parseInt(act.data.elevation) || 0;
-  });
-
-  // Calculate TL (Tirada Larga) metrics - ONLY from session index 6 (Sunday TL)
-  let tlDuration = 0, tlRitmo = null;
-  if (state.workoutData[6]) {
-    const tlData = state.workoutData[6];
-    tlDuration = parseInt(tlData.duration) || 0;
-    if (tlData.distance && tlData.duration) {
-      const ritmoDecimal = tlData.duration / tlData.distance;
-      tlRitmo = parseFloat(ritmoDecimal.toFixed(2));
-    }
-  }
-
-  const volReal = filteredWeeks.map((w, idx) => {
-    if (w.week === 1) return weekVolume || null;
-    return parseFloat(state.progressData[String(w.week)]?.volReal) || null;
+  // Build chart data
+  const volReal = filteredWeeks.map(w => {
+    const stats = getWeekStats(w.week);
+    return stats.vol > 0 ? stats.vol : null;
   });
   const volTeor = filteredWeeks.map(w => w.vol);
-  const elevReal = filteredWeeks.map((w, idx) => {
-    if (w.week === 1) return weekElev || null;
-    return parseFloat(state.progressData[String(w.week)]?.elevReal) || null;
+
+  const elevReal = filteredWeeks.map(w => {
+    const stats = getWeekStats(w.week);
+    return stats.elev > 0 ? stats.elev : null;
   });
   const elevTeor = filteredWeeks.map(w => w.elev);
-  const ritmo = filteredWeeks.map((w, idx) => {
-    if (w.week === 1) return tlRitmo;
-    return parseFloat(state.progressData[String(w.week)]?.ritmo) || null;
+
+  const ritmo = filteredWeeks.map(w => {
+    const stats = getWeekStats(w.week);
+    return stats.tlRitmo;
   });
-  const duracion = filteredWeeks.map((w, idx) => {
-    if (w.week === 1) return tlDuration ? (tlDuration / 60) : null;
-    return parseFloat(state.progressData[String(w.week)]?.duracion) || null;
+
+  const duracion = filteredWeeks.map(w => {
+    const stats = getWeekStats(w.week);
+    return stats.tlDuration > 0 ? stats.tlDuration : null;
   });
-  const duracionTeor = filteredWeeks.map(w => {
-    if (w.week >= 45) return 2;
-    if (w.week >= 29) return 3.5;
-    if (w.week >= 13) return 3;
-    return 2.5;
-  });
+
+  const duracionTeor = filteredWeeks.map(w => w.tlDuration || 2.5);
   const weeks = filteredWeeks.map(w => 'S' + w.week);
 
   const chartOpts = {
