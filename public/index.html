@@ -9085,14 +9085,6 @@ function renderDashboard() {
       // Notes
       if (data.notes) metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#8B949E;margin-top:6px;padding-top:6px;border-top:1px solid rgba(139,148,158,0.2)' }, data.notes));
 
-      // Exercises (for Strength/Recovery)
-      if (data.exercises && data.exercises.length > 0) {
-        metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#8B949E;margin-top:6px;padding-top:6px;border-top:1px solid rgba(139,148,158,0.2)' }, 'Ejercicios:'));
-        data.exercises.forEach(ex => {
-          metricsDiv.appendChild(el('div', { style: 'font-size:10px;color:#A371F7;margin-top:2px;margin-left:8px' }, ex.name + ' · ' + ex.setsCompleted + '×' + ex.repsCompleted));
-        });
-      }
-
       card.appendChild(metricsDiv);
 
       const btnDiv = el('div', { style: 'display:flex;gap:6px;margin-top:8px' });
