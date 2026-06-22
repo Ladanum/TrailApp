@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: 2026-06-22-11:00 FIX: Filter blocks by description (A+B) - CACHE RESET v5 -->
+<!-- BUILD: 2026-06-22-11:30 FIX: Preserve local workout data on login - CACHE RESET v6 -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -12126,19 +12126,43 @@ function applyUsername() {
     return;
   }
 
-  // Clear old data
-  localStorage.removeItem('trailapp_completed');
-  localStorage.removeItem('progreso_ultra_2026');
-  localStorage.removeItem('trailapp_extras');
-  localStorage.removeItem('trailapp_races');
-  localStorage.removeItem('trailapp_workouts');
+  // Load existing local data before setting username (preserve workouts)
+  const existingCompleted = localStorage.getItem('trailapp_completed');
+  const existingWorkouts = localStorage.getItem('trailapp_workouts');
+  const existingExtras = localStorage.getItem('trailapp_extras');
+  const existingRaces = localStorage.getItem('trailapp_races');
 
   state.username = username;
-  state.completedDays = {};
-  state.workoutData = {};
-  state.progressData = {};
-  state.raceData = {};
-  state.extraActivities = [];
+
+  // Restore local data if it exists
+  if (existingCompleted) {
+    try {
+      state.completedDays = JSON.parse(existingCompleted);
+    } catch (e) {
+      state.completedDays = {};
+    }
+  }
+  if (existingWorkouts) {
+    try {
+      state.workoutData = JSON.parse(existingWorkouts);
+    } catch (e) {
+      state.workoutData = {};
+    }
+  }
+  if (existingExtras) {
+    try {
+      state.extraActivities = JSON.parse(existingExtras);
+    } catch (e) {
+      state.extraActivities = [];
+    }
+  }
+  if (existingRaces) {
+    try {
+      state.raceData = JSON.parse(existingRaces);
+    } catch (e) {
+      state.raceData = {};
+    }
+  }
 
   localStorage.setItem('trailapp_username', username);
   updateUsernameDisplay();
