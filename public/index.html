@@ -10256,6 +10256,64 @@ function getDayInSpanish(fullDate) {
   return daysSpanish[date.getUTCDay()];
 }
 
+function getSessionDescription(session) {
+  const desc = session.description;
+  const type = session.type;
+
+  // Map type to keywords to extract from combined description
+  const typeKeywords = {
+    'GYM': ['Fuerza', 'gimnasio', 'bici'],
+    'Z1': ['Z1', 'Rodaje.*llano'],
+    'Z2': ['Z2', 'Rodaje.*progresivo'],
+    'TL': ['Tirada larga', 'TL'],
+    'EST': ['estiramiento', 'estiramientos'],
+    'MOB': ['movilidad', 'MOB'],
+    'REC': ['recuperación', 'REC'],
+    'REF': ['específico', 'REF'],
+    '[GYM]': ['gimnasio', 'bici']
+  };
+
+  // Try to extract just the relevant part
+  const keywords = typeKeywords[type] || [];
+
+  for (const keyword of keywords) {
+    const regex = new RegExp(`(${keyword}[^+]*)(?:\\s*\\+|$)`, 'i');
+    const match = desc.match(regex);
+    if (match) {
+      return match[1].trim();
+    }
+  }
+
+  // If no match, try to split by + and find the right part
+  if (desc.includes('+')) {
+    const parts = desc.split('+').map(p => p.trim());
+
+    // For Strength types
+    if (type === 'GYM' || type === '[GYM]') {
+      const part = parts.find(p => p.match(/Fuerza|gimnasio|bici/i));
+      if (part) return part;
+    }
+
+    // For Recovery types
+    if (type === 'EST') {
+      const part = parts.find(p => p.match(/estiramiento/i));
+      if (part) return part;
+    }
+    if (type === 'MOB') {
+      const part = parts.find(p => p.match(/movilidad/i));
+      if (part) return part;
+    }
+
+    // For Running types
+    if (type === 'Z1' || type === 'Z2' || type === 'TL') {
+      const part = parts.find(p => p.match(/Rodaje|Tirada|Z[0-9]|llano|progresivo/i));
+      if (part) return part;
+    }
+  }
+
+  return desc;
+}
+
 function renderDashboard() {
   const wrap = document.createElement('div');
   wrap.style.paddingBottom = '60px';
@@ -10426,7 +10484,7 @@ function renderDashboard() {
       card.appendChild(top);
       card.appendChild(el('div', { class: 'card-date', style: 'font-size:10px;color:#8B949E;margin-top:4px' }, dateStr));
       card.appendChild(el('span', { class: badgeClass(s.cat), style: 'font-size:10px;margin-top:4px;display:inline-block' }, s.type));
-      card.appendChild(el('div', { class: 'card-desc', style: 'font-size:11px;margin-top:4px;line-height:1.3' }, s.description));
+      card.appendChild(el('div', { class: 'card-desc', style: 'font-size:11px;margin-top:4px;line-height:1.3' }, getSessionDescription(s)));
       const dur = el('div', { class: 'card-bottom', style: 'margin-top:auto;padding-top:6px;border-top:1px solid rgba(139,148,158,0.1);margin-left:-12px;margin-right:-12px;margin-bottom:-12px;padding-left:12px;padding-right:12px;padding-bottom:12px' },
         el('span', { class: 'card-dur', style: 'font-size:10px' }, s.duration + ' min')
       );
