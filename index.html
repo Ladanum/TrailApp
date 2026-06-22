@@ -3542,15 +3542,27 @@ function renderDashboard() {
   let plannedDistance = 0;
   let plannedElevation = 0;
 
+  console.log(`📊 Week ${weekNumber} sessions:`, weekSessions.map(s => ({
+    index: s.index,
+    date: s.fullDate,
+    type: s.type,
+    duration: s.duration,
+    elevationGain: s.elevationGain,
+    infoElevation: s.info?.elevation
+  })));
+
   weekSessions.forEach(s => {
     const duration = parseInt(s.duration) || 0;
     plannedTime += duration;
 
     // Add elevation if available
     if (s.elevationGain) {
-      plannedElevation += s.elevationGain;
+      plannedElevation += parseInt(s.elevationGain) || 0;
+      console.log(`  ✓ ${s.type} (${s.fullDate}): +${s.elevationGain}m`);
     }
   });
+
+  console.log(`📊 Total: ${plannedTime}min, ${plannedElevation}m elevation`);
 
   const plannedHours = Math.floor(plannedTime / 60);
   const plannedMins = plannedTime % 60;
