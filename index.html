@@ -3276,6 +3276,8 @@ function renderDashboard() {
   const currentWeekIndex = Math.floor(daysDiff / 7) * 7;
   const weekSessions = SESSIONS.filter(s => s.index >= currentWeekIndex && s.index < currentWeekIndex + 7);
 
+  console.log(`📅 Dashboard: today=${today.toDateString()}, daysDiff=${daysDiff}, currentWeekIndex=${currentWeekIndex}, showing ${weekSessions.length} sessions`);
+
   // Planned sessions
   const scroll = el('div', { class: 'week-scroll' });
   const grid = el('div', { class: 'week-grid' });
