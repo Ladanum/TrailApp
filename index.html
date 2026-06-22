@@ -3582,7 +3582,13 @@ function renderSession(idx) {
 
   // Si es un entreno de fuerza con variantes, usar la variante seleccionada
   if (s.blocksVariants) {
-    s.blocks = s.blocksVariants[state.strengthVariant] || s.blocksVariants['con-equipamiento'];
+    const blockObj = (s.blocksVariants[state.strengthVariant] || s.blocksVariants['con-equipamiento']).blocks;
+    // Convert object { A: [...], B: [...] } to array [{ id: 'A', exercises: [...] }, ...]
+    s.blocks = Object.keys(blockObj).map(key => ({
+      id: key,
+      name: key,
+      exercises: blockObj[key]
+    }));
   }
 
   // Back
