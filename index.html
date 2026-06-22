@@ -3276,14 +3276,16 @@ function renderDashboard() {
   wrap.appendChild(pb);
 
   // Calculate current week (weeks start on Monday)
-  const planStart = new Date('2026-06-15'); // Plan starts Sunday 15 June
+  // Create dates at midnight UTC to avoid timezone issues
+  const planStart = new Date(Date.UTC(2026, 5, 15)); // June 15, 2026 00:00 UTC
   const today = new Date();
+  const todayMidnightUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
 
   // Find this week's Monday
-  const dayOfWeek = today.getUTCDay(); // 0=Sunday, 1=Monday, etc.
+  const dayOfWeek = todayMidnightUTC.getUTCDay(); // 0=Sunday, 1=Monday, etc.
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days to go back to Monday
-  const thisMonday = new Date(today);
-  thisMonday.setUTCDate(today.getUTCDate() - daysToMonday);
+  const thisMonday = new Date(todayMidnightUTC);
+  thisMonday.setUTCDate(todayMidnightUTC.getUTCDate() - daysToMonday);
 
   const daysDiff = Math.floor((thisMonday - planStart) / (1000 * 60 * 60 * 24));
   const currentWeekIndex = daysDiff; // Starting index for this week
