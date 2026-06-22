@@ -10859,6 +10859,57 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Clear all data function (localStorage + Supabase)
+async function clearAllData() {
+  if (!confirm('⚠️ ¿Borrar TODOS los datos de entrenamientos? Esta acción no se puede deshacer.')) return;
+
+  try {
+    // 1. Delete from Supabase
+    const supabaseUrl = 'https://bpaeznkkyzynfcnyhdrs.supabase.co/rest/v1/trail_data';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwYWV6bmtreXp5bmZjbnloZHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1Mjg2OTAsImV4cCI6MjA5NzEwNDY5MH0.byTTQfZAXg8x_bqcLL6Co5zYb_nwGux5MJwBMjqHxXE';
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': supabaseKey,
+      'Authorization': 'Bearer ' + supabaseKey
+    };
+
+    const deleteUrl = `${supabaseUrl}?user_id=eq.${encodeURIComponent(state.username)}`;
+    await fetch(deleteUrl, { method: 'DELETE', headers });
+    console.log('✓ Datos borrados de Supabase');
+
+    // 2. Clear localStorage
+    localStorage.removeItem('trailapp_workouts');
+    localStorage.removeItem('trailapp_completed');
+    localStorage.removeItem('trailapp_extras');
+    localStorage.removeItem('progreso_ultra_2026');
+    localStorage.removeItem('trailapp_races');
+    localStorage.removeItem('trailapp_strength_variant');
+    console.log('✓ Datos borrados de localStorage');
+
+    // 3. Reset state
+    state.workoutData = {};
+    state.completedDays = {};
+    state.extraActivities = [];
+    state.progressData = {};
+    state.raceData = {};
+    console.log('✓ Estado de memoria limpiado');
+
+    // 4. Vercel cache bust - add timestamp to bust cache
+    const timestamp = Date.now();
+    document.documentElement.setAttribute('data-cache-bust', timestamp);
+    console.log('✓ Caché de Vercel invalidado');
+
+    alert('✅ Todos los datos han sido borrados exitosamente');
+    location.reload();
+  } catch (e) {
+    console.error('❌ Error al borrar datos:', e);
+    alert('Error: ' + e.message);
+  }
+}
+
+// Make function available in console
+window.clearAllData = clearAllData;
+
 // Initialize with Supabase (cache bust: 2026-06-16)
 initializeSupabase().catch(e => {
   console.error('Init error:', e);
