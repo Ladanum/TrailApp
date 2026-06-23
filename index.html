@@ -9897,14 +9897,41 @@ function renderProgress() {
     el('div', { class: 'page-sub' }, 'Semana ' + currentWeekClamped + ' de 52 · Plan Ultra 80K')
   ));
 
-  // 1º - Semanas completadas y porcentaje
+  // 1º - Semanas completadas y porcentaje (basado en entrenamientos reales)
   let completedWeeks = 0;
-  WEEKS_PLAN.forEach(w => {
-    const weekData = state.progressData[String(w.week)];
-    if (weekData && (weekData.volReal || weekData.elevReal)) {
+  const PLAN_START_DATE = new Date('2026-06-15');
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+  for (let week = 1; week <= 52; week++) {
+    const weekStartDate = new Date(PLAN_START_DATE.getTime() + (week - 1) * MS_PER_WEEK);
+    const weekEndDate = new Date(weekStartDate.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+    // Count sessions completed in this week
+    let weekHasData = false;
+    SESSIONS.forEach(s => {
+      const sessionDate = new Date(s.fullDate + 'T00:00:00Z');
+      if (sessionDate >= weekStartDate && sessionDate <= weekEndDate) {
+        if (state.completedDays[s.index] && state.workoutData[s.index]) {
+          weekHasData = true;
+        }
+      }
+    });
+
+    // Also check extra activities
+    if (!weekHasData) {
+      state.extraActivities.forEach(act => {
+        const actDate = new Date(act.date + 'T00:00:00Z');
+        if (actDate >= weekStartDate && actDate <= weekEndDate) {
+          weekHasData = true;
+        }
+      });
+    }
+
+    if (weekHasData) {
       completedWeeks++;
     }
-  });
+  }
+
   const totalWeeks = 52;
   const percentComplete = ((completedWeeks / totalWeeks) * 100).toFixed(1);
 
