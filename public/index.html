@@ -8979,8 +8979,11 @@ function renderDashboard() {
       const done = !!state.completedDays[s.index];
       const data = state.workoutData[s.index];
       const today = new Date();
+      const todayDateOnly = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
       const sessionDate = getSessionDateObj(s.fullDate);
-      const isPast = today > sessionDate;
+      const sessionDateOnly = new Date(Date.UTC(sessionDate.getUTCFullYear(), sessionDate.getUTCMonth(), sessionDate.getUTCDate()));
+      const isToday = todayDateOnly.getTime() === sessionDateOnly.getTime();
+      const isPastButNotToday = sessionDate < todayDateOnly;
 
       let cardClass = 'session-card';
       let cardStyle = '';
@@ -8991,7 +8994,7 @@ function renderDashboard() {
         } else {
           cardStyle = 'background:rgba(240,193,62,0.15);border-color:rgba(240,193,62,0.4);';
         }
-      } else if (!done && isPast) {
+      } else if (!done && isPastButNotToday) {
         cardStyle = 'background:rgba(240,88,88,0.15);border-color:rgba(240,88,88,0.4);';
       }
 
