@@ -9948,10 +9948,27 @@ function renderProgress() {
     )
   ));
 
-  // 2º - Sesiones realizadas
+  // 2º - Sesiones realizadas (semana actual)
+  // Calculate sessions for current week
+  const currentWeekStart = new Date(PLAN_START_DATE.getTime() + (currentWeekClamped - 1) * MS_PER_WEEK);
+  const currentWeekEnd = new Date(currentWeekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
+
+  let plannedSessions = 0;
+  let completedSessions = 0;
+
+  SESSIONS.forEach(s => {
+    const sessionDate = new Date(s.fullDate + 'T00:00:00Z');
+    if (sessionDate >= currentWeekStart && sessionDate <= currentWeekEnd) {
+      plannedSessions++;
+      if (state.completedDays[s.index]) {
+        completedSessions++;
+      }
+    }
+  });
+
   wrap.appendChild(el('div', { style: 'margin-bottom:24px' },
     el('div', { style: 'font-size:13px;font-weight:600;color:#8B949E;margin-bottom:12px;letter-spacing:0.05em;text-transform:uppercase' }, 'Sesiones esta semana'),
-    el('div', { style: 'font-size:28px;font-weight:700;color:#3FB950;font-family:monospace' }, done + ' / 7')
+    el('div', { style: 'font-size:28px;font-weight:700;color:#3FB950;font-family:monospace' }, completedSessions + ' / ' + plannedSessions)
   ));
 
   // 3º - Programado (2 columnas)
