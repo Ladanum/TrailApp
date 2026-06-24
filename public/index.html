@@ -8711,18 +8711,17 @@ function renderExtraActivityModal() {
     distanceInput = null;
     elevationInput = null;
 
-    if (type === 'zone' || type === 'tl') {
-      distanceInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 12.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
-      elevationInput = el('input', { type: 'number', placeholder: 'ej: 300', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
-      metricsDiv.appendChild(el('div', { style: 'margin-bottom:12px' },
-        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
-        distanceInput
-      ));
-      metricsDiv.appendChild(el('div', {},
-        el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Desnivel (m)'),
-        elevationInput
-      ));
-    }
+    // Show distance and elevation for all types
+    distanceInput = el('input', { type: 'number', step: '0.1', placeholder: 'ej: 12.5', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+    elevationInput = el('input', { type: 'number', placeholder: 'ej: 300', style: 'width:100%;padding:8px;background:#0D1117;border:1px solid #21262D;border-radius:4px;color:#E6EDF3;font-size:11px' });
+    metricsDiv.appendChild(el('div', { style: 'margin-bottom:12px' },
+      el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Distancia (km)'),
+      distanceInput
+    ));
+    metricsDiv.appendChild(el('div', {},
+      el('label', { style: 'font-size:11px;color:#8B949E;display:block;margin-bottom:4px' }, 'Desnivel (m)'),
+      elevationInput
+    ));
   };
 
   typeSelect.addEventListener('change', updateMetrics);
@@ -8759,10 +8758,9 @@ function renderExtraActivityModal() {
       data: {}
     };
 
-    if (type === 'zone' || type === 'tl') {
-      if (distanceInput) activity.data.distance = parseFloat(distanceInput.value) || 0;
-      if (elevationInput) activity.data.elevation = parseInt(elevationInput.value) || 0;
-    }
+    // Save distance and elevation for all types
+    if (distanceInput) activity.data.distance = parseFloat(distanceInput.value) || 0;
+    if (elevationInput) activity.data.elevation = parseInt(elevationInput.value) || 0;
 
     state.extraActivities.push(activity);
     saveExtraActivities();
