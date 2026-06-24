@@ -9979,25 +9979,49 @@ function renderProgress() {
     makeStatCard('D+ programado', weekPlan.elev + ' m', 'planificado', '#F0883E')
   ));
 
-  // 4º - Real (2 columnas)
+  // 4º - Real (3 columnas: volumen, desnivel, ritmo TL)
   let totalDistance = 0, totalElevation = 0;
+  let tlTotalDistance = 0, tlTotalDuration = 0;
+
   SESSIONS.forEach(s => {
     if (state.completedDays[s.index]) {
       const data = state.workoutData[s.index];
       if (data) {
         totalDistance += parseFloat(data.distance) || 0;
         totalElevation += parseInt(data.elevation) || 0;
+
+        // Calculate TL pace (Trail Running = TL)
+        if (s.cat === 'Trail Running') {
+          tlTotalDistance += parseFloat(data.distance) || 0;
+          tlTotalDuration += parseInt(data.duration) || 0;
+        }
       }
     }
   });
   state.extraActivities.forEach(act => {
     totalDistance += parseFloat(act.data.distance) || 0;
     totalElevation += parseInt(act.data.elevation) || 0;
+
+    // TL extra activities
+    if (act.type === 'tl') {
+      tlTotalDistance += parseFloat(act.data.distance) || 0;
+      tlTotalDuration += parseInt(act.duration) || 0;
+    }
   });
 
-  wrap.appendChild(el('div', { class: 'stat-grid', style: 'grid-template-columns:repeat(2,1fr);margin-bottom:24px' },
+  // Calculate TL pace
+  let tlPaceStr = '—';
+  if (tlTotalDistance > 0 && tlTotalDuration > 0) {
+    const tlPaceDecimal = tlTotalDuration / tlTotalDistance;
+    const minutos = Math.floor(tlPaceDecimal);
+    const segundos = Math.round((tlPaceDecimal - minutos) * 60);
+    tlPaceStr = minutos + ':' + (segundos < 10 ? '0' : '') + segundos + ' min/km';
+  }
+
+  wrap.appendChild(el('div', { class: 'stat-grid', style: 'grid-template-columns:repeat(3,1fr);margin-bottom:24px' },
     makeStatCard('Volumen real', totalDistance.toFixed(1) + ' km', 'acumulado', '#3FB950'),
-    makeStatCard('D+ real', totalElevation + ' m', 'acumulado', '#F0883E')
+    makeStatCard('D+ real', totalElevation + ' m', 'acumulado', '#F0883E'),
+    makeStatCard('Ritmo TL', tlPaceStr, '6-13 min/km ideal', '#A371F7')
   ));
 
   // Get current mesociclo based on current week
