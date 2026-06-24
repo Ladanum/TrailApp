@@ -10128,39 +10128,55 @@ function renderProgress() {
     let isDone = false;
     let hasSession = false;
 
-    // Create numeric date key in format YYYYMMDD for reliable lookup
-    const numericDateKey = String(state.calendarYear) +
-                          String(state.calendarMonth + 1).padStart(2, '0') +
-                          String(dayNum).padStart(2, '0');
-    const sessionForDate = sessionsByDate[numericDateKey];
+    // Create date string for lookup (YYYY-MM-DD)
+    const dateStr = String(state.calendarYear) + '-' +
+                   String(state.calendarMonth + 1).padStart(2, '0') + '-' +
+                   String(dayNum).padStart(2, '0');
 
-    if (sessionForDate) {
+    // Get ALL sessions for this date
+    const sessionsForDate = SESSIONS.filter(s => s.fullDate === dateStr);
+    let completedCount = 0;
+    let totalCount = sessionsForDate.length;
+
+    sessionsForDate.forEach(s => {
+      if (state.completedDays[s.index]) {
+        completedCount++;
+      }
+    });
+
+    if (totalCount > 0) {
       hasSession = true;
-      isDone = !!state.completedDays[sessionForDate.index];
+      isDone = (completedCount === totalCount);
     }
 
-    const isToday = (currentMonth === currDate.getMonth() && currentYear === currDate.getFullYear() && currentDay === currDate.getDate());
+    const isToday = (state.calendarMonth === new Date().getMonth() && state.calendarYear === new Date().getFullYear() && dayNum === new Date().getDate());
     const isPast = currDate < new Date();
 
     const dc = el('div', { class: 'cal-day', style: 'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;' });
     const dayNum_el = el('div', { style: 'font-weight: 700; font-size: 1.2em; line-height: 1;' }, String(dayNum));
     dc.appendChild(dayNum_el);
 
-    if (sessionForDate) {
-      const typeEl = el('div', { style: 'font-size: 0.65em; font-weight: 500; color: #8B949E; letter-spacing: 0.05em;' }, sessionForDate.type);
-      dc.appendChild(typeEl);
+    if (totalCount > 0) {
+      const countEl = el('div', { style: 'font-size: 0.65em; font-weight: 500; color: #8B949E; letter-spacing: 0.05em;' }, completedCount + '/' + totalCount);
+      dc.appendChild(countEl);
     }
 
-    // Color logic: green if done, red if not done but has session and past, transparent otherwise
+    // Color logic: green=all done, yellow=some done, red=none done
     let bgColor = 'transparent';
     let textColor = '#E6EDF3';
-    if (isToday) {
+    if (isToday && totalCount > 0) {
       bgColor = '#3FB950';
       textColor = '#0D1117';
-    } else if (isDone) {
+    } else if (totalCount > 0 && completedCount === totalCount) {
+      // Green: all completed
       bgColor = 'rgba(63,185,80,0.2)';
       textColor = '#3FB950';
+    } else if (totalCount > 0 && completedCount > 0) {
+      // Yellow: some completed
+      bgColor = 'rgba(240,193,62,0.2)';
+      textColor = '#F0883E';
     } else if (hasSession && isPast) {
+      // Red: none completed and is past
       bgColor = 'rgba(240,88,88,0.2)';
       textColor = '#f05858';
     }
