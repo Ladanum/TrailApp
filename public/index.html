@@ -9009,7 +9009,7 @@ function renderDashboard() {
         chk.setAttribute('width', '14'); chk.setAttribute('height', '14'); chk.setAttribute('viewBox', '0 0 14 14');
         chk.innerHTML = '<circle cx="7" cy="7" r="6" fill="rgba(63,185,80,0.18)"/><path d="M4.5 7L6.5 9L9.5 4.5" stroke="#3FB950" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
         top.appendChild(chk);
-      } else if (!done && isPast) {
+      } else if (!done && isPastButNotToday) {
         const cross = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         cross.setAttribute('width', '14'); cross.setAttribute('height', '14'); cross.setAttribute('viewBox', '0 0 14 14');
         cross.innerHTML = '<circle cx="7" cy="7" r="6" fill="rgba(240,88,88,0.18)"/><path d="M4.5 4.5L9.5 9.5M9.5 4.5L4.5 9.5" stroke="#f05858" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>';
