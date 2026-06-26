@@ -764,7 +764,9 @@ export default function DashboardPro() {
 
               {/* Right: Calendar */}
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-4">
-                <div className="text-xs uppercase text-[#8B949E] font-bold mb-4">Junio 2026</div>
+                <div className="text-xs uppercase text-[#8B949E] font-bold mb-4">
+                  {today.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-[#8B949E] mb-2">
                   <div>L</div>
                   <div>M</div>
@@ -777,19 +779,36 @@ export default function DashboardPro() {
                 <div className="grid grid-cols-7 gap-1 text-center text-sm">
                   {[...Array(31)].map((_, i) => {
                     const day = i + 1
-                    const isToday = day === 15
+                    const dateStr = new Date(today.getFullYear(), today.getMonth(), day).toISOString().split('T')[0]
+                    const isToday = day === today.getDate()
+
+                    // Check if day has planned sessions
+                    const dayPlannedSessions = SESSIONS.filter((session: any) => {
+                      const sDate = parseSessionDate(session.fullDate)
+                      return sDate.toISOString().split('T')[0] === dateStr
+                    })
+
+                    // Check if day has completed workouts
+                    const dayCompletedWorkouts = workouts.filter(w => w.date === dateStr)
+
+                    const hasPlanSessions = dayPlannedSessions.length > 0
+                    const hasCompletedWorkouts = dayCompletedWorkouts.length > 0
+
+                    let bgColor = 'text-[#8B949E]/50'
+                    if (hasPlanSessions) {
+                      bgColor = hasCompletedWorkouts
+                        ? 'bg-[#3FB950]/20 border border-[#3FB950] text-[#3FB950] font-bold'
+                        : 'bg-[#EF4444]/20 border border-[#EF4444] text-[#EF4444] font-bold'
+                    }
+
                     return (
                       <div
                         key={day}
                         className={`aspect-square flex items-center justify-center rounded font-mono font-bold transition ${
-                          day < 7 || day > 21
-                            ? 'text-[#8B949E]/50'
-                            : isToday
-                            ? 'bg-[#3FB950]/20 border-2 border-[#3FB950] text-[#3FB950]'
-                            : 'text-[#E6EDF3] hover:border border-[#21262D]'
-                        }`}
+                          isToday && hasPlanSessions ? 'border-2' : ''
+                        } ${bgColor}`}
                       >
-                        {day < 7 || day > 21 ? '' : day}
+                        {hasPlanSessions ? day : ''}
                       </div>
                     )
                   })}
