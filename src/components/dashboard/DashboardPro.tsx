@@ -136,15 +136,14 @@ export default function DashboardPro() {
   const plannedDates = new Set(plannedThisWeek.map(p => p.date))
   const plannedDays = plannedDates.size
 
-  console.log('DEBUG Dashboard:', {
-    weekStart: weekStart.toISOString().split('T')[0],
-    weekEnd: weekEndDate.toISOString().split('T')[0],
-    thisWeekWorkouts: thisWeekWorkouts.length,
-    completedDays,
-    completedDates: Array.from(completedDates),
-    plannedDays,
-    plannedDates: Array.from(plannedDates),
-  })
+  // Calculate current week number within the phase
+  let currentWeekNumber = 1
+  if (currentPhase) {
+    const phaseStart = new Date(currentPhase.start_date)
+    phaseStart.setHours(0, 0, 0, 0)
+    const daysSincePhaseStart = Math.floor((today.getTime() - phaseStart.getTime()) / (1000 * 60 * 60 * 24))
+    currentWeekNumber = Math.floor(daysSincePhaseStart / 7) + 1
+  }
 
   const loading = workoutsLoading || dailyStateLoading
 
@@ -234,11 +233,11 @@ export default function DashboardPro() {
             <div className="flex justify-between items-start gap-4 mb-5 flex-wrap">
               <div>
                 <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1 font-bold">
-                  MF1 · SEMANA 01 · MICROCICLO A
+                  {currentPhase?.id || 'MF1'} · SEMANA {String(currentWeekNumber).padStart(2, '0')}
                 </div>
                 <h1 className="text-3xl font-black text-[#E6EDF3] -tracking-wide mb-1">Dashboard Semanal</h1>
                 <div className="text-sm text-[#8B949E]">
-                  Recuperación y Base · 15–21 junio 2026
+                  {currentPhase?.name || 'Recuperación y Base'} · {weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}–{weekEndDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
                 </div>
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3 text-right flex-shrink-0">
