@@ -637,6 +637,7 @@ export default function DashboardPro() {
         ) : (
           /* Progress View */
           <div>
+            {console.log('ALL WORKOUTS:', workouts.map(w => ({ date: w.date, distance: w.distance_km })))}
             <div className="mb-6">
               <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1">PLAN GENERAL</div>
               <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">Progreso</h1>
@@ -779,13 +780,23 @@ export default function DashboardPro() {
                 <div className="grid grid-cols-7 gap-1 text-center text-sm">
                   {[...Array(31)].map((_, i) => {
                     const day = i + 1
-                    const dateStr = new Date(today.getFullYear(), today.getMonth(), day).toISOString().split('T')[0]
+                    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                     const isToday = day === today.getDate()
 
-                    // Check if day has planned sessions
+                    // Check if day has planned sessions - extract date from fullDate string
+                    // fullDate format: "Lunes, 15 Jun 2026"
                     const dayPlannedSessions = SESSIONS.filter((session: any) => {
-                      const sDate = parseSessionDate(session.fullDate)
-                      return sDate.toISOString().split('T')[0] === dateStr
+                      const fullDate = session.fullDate
+                      const parts = fullDate.split(', ')
+                      if (parts.length < 2) return false
+                      const datePart = parts[1] // "15 Jun 2026"
+                      const [dayStr, monthStr, yearStr] = datePart.split(' ')
+                      const months: Record<string, string> = {
+                        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+                        'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                      }
+                      const sessionDateStr = `${yearStr}-${months[monthStr]}-${String(dayStr).padStart(2, '0')}`
+                      return sessionDateStr === dateStr
                     })
 
                     // Check if day has completed workouts
@@ -793,6 +804,8 @@ export default function DashboardPro() {
 
                     const hasPlanSessions = dayPlannedSessions.length > 0
                     const hasCompletedWorkouts = dayCompletedWorkouts.length > 0
+
+                    console.log(`Day ${day}: planned=${hasPlanSessions}, completed=${hasCompletedWorkouts}, workouts=${dayCompletedWorkouts.length}`)
 
                     let bgColor = 'text-[#8B949E]/50'
                     if (hasPlanSessions) {

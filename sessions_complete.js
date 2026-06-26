@@ -42,3 +42,5 @@ const SESSIONS = [
   { index: 40, day: 'SÁB', date: '25 Jul', fullDate: 'Sábado, 25 Jul 2026', type: 'Z2', cat: 'zone', description: 'Rodaje aeróbico base de resistencia. Consolidación aeróbica final.', duration: '65 min', zone: 'Z2', alert: false, detail: 'Zona 2, despedida MF1.', blocks: null },
   { index: 41, day: 'DOM', date: '04 Aug', fullDate: 'Domingo, 04 Aug 2026', type: 'DESC', cat: 'rest', description: 'Descanso completo. Fin del macrociclo de preparación MF1.', duration: '-', zone: 'REST', alert: false, detail: 'Checkpoint CP1 — Evaluación antes de MF2.', blocks: null }
 ];
+
+export default SESSIONS;
