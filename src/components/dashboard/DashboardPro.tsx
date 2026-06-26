@@ -8,6 +8,10 @@ import { useMacrocycle } from '../../hooks/useMacrocycle'
 import { RACE_CALENDAR, CP3_CRITERIA, type RaceEvent } from '../../data/raceCalendar'
 import { PLANNED_WORKOUTS, type PlannedWorkout } from '../../data/plannedWorkouts'
 
+// Import sessions data from sessions_complete.js
+// @ts-ignore - js file without types
+import SESSIONS from '../../sessions_complete.js'
+
 export default function DashboardPro() {
   const [view, setView] = useState<'dashboard' | 'progress' | 'races'>('dashboard')
   const [selectedRace, setSelectedRace] = useState<RaceEvent | null>(null)
@@ -123,15 +127,37 @@ export default function DashboardPro() {
   // Calculate completed vs planned sessions for this week
   const weekEndDate = new Date(weekStart)
   weekEndDate.setDate(weekEndDate.getDate() + 6)
-  const plannedThisWeek = PLANNED_WORKOUTS.filter(pw => {
-    const pwDate = new Date(pw.date)
-    return pwDate >= weekStart && pwDate <= weekEndDate
+
+  // Parse session dates from SESSIONS data
+  const parseSessionDate = (fullDate: string, year?: number) => {
+    // Format: "Lunes, 15 Jun 2026"
+    const months: Record<string, number> = {
+      'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
+      'Jul': 6, 'Aug': 7, 'Sep': 8, 'Oct': 9, 'Nov': 10, 'Dec': 11
+    }
+    const parts = fullDate.split(', ')
+    if (parts.length < 2) return new Date(0)
+    const dateStr = parts[1]
+    const [day, month, y] = dateStr.split(' ')
+    const selectedYear = parseInt(y)
+    const selectedMonth = months[month] || 0
+    return new Date(selectedYear, selectedMonth, parseInt(day), 0, 0, 0, 0)
+  }
+
+  // Use SESSIONS data instead of PLANNED_WORKOUTS
+  const plannedThisWeek = SESSIONS.filter((session: any) => {
+    const sessionDate = parseSessionDate(session.fullDate)
+    return sessionDate >= weekStart && sessionDate <= weekEndDate
   })
 
   // Count completed planned sessions (planned sessions that have workouts executed)
   const completedDates = new Set(thisWeekWorkouts.map(w => w.date))
-  const completedPlannedSessions = plannedThisWeek.filter(p => completedDates.has(p.date)).length
-  const totalPlannedSessions = plannedThisWeek.length
+  const sessionDates = new Set(plannedThisWeek.map((s: any) => {
+    const d = parseSessionDate(s.fullDate)
+    return d.toISOString().split('T')[0]
+  }))
+  const completedPlannedSessions = Array.from(sessionDates).filter(date => completedDates.has(date)).length
+  const totalPlannedSessions = sessionDates.size
 
   // Calculate current week number within the phase
   let currentWeekNumber = 1
