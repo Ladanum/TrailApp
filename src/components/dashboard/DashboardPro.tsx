@@ -128,13 +128,10 @@ export default function DashboardPro() {
     return pwDate >= weekStart && pwDate <= weekEndDate
   })
 
-  // Count unique days with completed workouts (not total workouts)
+  // Count completed planned sessions (planned sessions that have workouts executed)
   const completedDates = new Set(thisWeekWorkouts.map(w => w.date))
-  const completedDays = completedDates.size
-
-  // Count unique days with planned workouts
-  const plannedDates = new Set(plannedThisWeek.map(p => p.date))
-  const plannedDays = plannedDates.size
+  const completedPlannedSessions = plannedThisWeek.filter(p => completedDates.has(p.date)).length
+  const totalPlannedSessions = plannedThisWeek.length
 
   // Calculate current week number within the phase
   let currentWeekNumber = 1
@@ -242,10 +239,10 @@ export default function DashboardPro() {
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3 text-right flex-shrink-0">
                 <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-1">
-                  Días completados
+                  Sesiones completadas
                 </div>
                 <div className="font-mono text-2xl font-bold text-[#3FB950]">
-                  {completedDays}/{plannedDays}
+                  {completedPlannedSessions}/{totalPlannedSessions}
                 </div>
               </div>
             </div>
