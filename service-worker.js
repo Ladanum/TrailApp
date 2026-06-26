@@ -42,6 +42,30 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // For index.html: always try network first for fresh updates
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          if (response && response.status === 200) {
+            // Cache the fresh version
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // If offline, return cached version
+          return caches.match(request).then(cached => {
+            return cached || caches.match('/index.html');
+          });
+        })
+    );
+    return;
+  }
+
   // Don't cache supabase API calls (always fetch fresh)
   if (url.hostname.includes('supabase.co')) {
     event.respondWith(

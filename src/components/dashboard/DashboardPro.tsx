@@ -120,6 +120,32 @@ export default function DashboardPro() {
     { id: 'RACE', name: 'Ultra 80K · Sub 11h', date: '15 jun 2027', color: '#A371F7' },
   ]
 
+  // Calculate completed vs planned sessions for this week
+  const weekEndDate = new Date(weekStart)
+  weekEndDate.setDate(weekEndDate.getDate() + 6)
+  const plannedThisWeek = PLANNED_WORKOUTS.filter(pw => {
+    const pwDate = new Date(pw.date)
+    return pwDate >= weekStart && pwDate <= weekEndDate
+  })
+
+  // Count unique days with completed workouts (not total workouts)
+  const completedDates = new Set(thisWeekWorkouts.map(w => w.date))
+  const completedDays = completedDates.size
+
+  // Count unique days with planned workouts
+  const plannedDates = new Set(plannedThisWeek.map(p => p.date))
+  const plannedDays = plannedDates.size
+
+  console.log('DEBUG Dashboard:', {
+    weekStart: weekStart.toISOString().split('T')[0],
+    weekEnd: weekEndDate.toISOString().split('T')[0],
+    thisWeekWorkouts: thisWeekWorkouts.length,
+    completedDays,
+    completedDates: Array.from(completedDates),
+    plannedDays,
+    plannedDates: Array.from(plannedDates),
+  })
+
   const loading = workoutsLoading || dailyStateLoading
 
   return (
@@ -217,10 +243,10 @@ export default function DashboardPro() {
               </div>
               <div className="bg-[#161B22] border border-[#21262D] rounded-lg p-3 text-right flex-shrink-0">
                 <div className="text-xs uppercase tracking-wider text-[#8B949E] font-bold mb-1">
-                  Sesiones completadas
+                  Días completados
                 </div>
                 <div className="font-mono text-2xl font-bold text-[#3FB950]">
-                  0/7
+                  {completedDays}/{plannedDays}
                 </div>
               </div>
             </div>
