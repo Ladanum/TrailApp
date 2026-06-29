@@ -637,7 +637,6 @@ export default function DashboardPro() {
         ) : (
           /* Progress View */
           <div>
-            {console.log('ALL WORKOUTS:', workouts.map(w => ({ date: w.date, distance: w.distance_km })))}
             <div className="mb-6">
               <div className="font-mono text-xs text-[#3FB950] tracking-wider uppercase mb-1">PLAN GENERAL</div>
               <h1 className="text-2xl font-black text-[#E6EDF3] -tracking-wide mb-1">Progreso</h1>
