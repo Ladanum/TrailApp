@@ -783,13 +783,25 @@ export default function DashboardPro() {
                     const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                     const isToday = day === today.getDate()
 
-                    // Check if day has planned sessions - extract date from fullDate string
-                    // fullDate format: "Lunes, 15 Jun 2026"
+                    // Normalize date format - handle both "YYYY-MM-DD" and other formats
+                    const normalizeDate = (dateValue: any): string => {
+                      if (!dateValue) return ''
+                      const dateStr = String(dateValue)
+                      if (dateStr.includes('T')) {
+                        return dateStr.split('T')[0]
+                      }
+                      if (dateStr.includes('-') && dateStr.length >= 10) {
+                        return dateStr.substring(0, 10)
+                      }
+                      return dateStr
+                    }
+
+                    // Check if day has planned sessions
                     const dayPlannedSessions = SESSIONS.filter((session: any) => {
                       const fullDate = session.fullDate
                       const parts = fullDate.split(', ')
                       if (parts.length < 2) return false
-                      const datePart = parts[1] // "15 Jun 2026"
+                      const datePart = parts[1]
                       const [dayStr, monthStr, yearStr] = datePart.split(' ')
                       const months: Record<string, string> = {
                         'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
@@ -799,13 +811,14 @@ export default function DashboardPro() {
                       return sessionDateStr === dateStr
                     })
 
-                    // Check if day has completed workouts
-                    const dayCompletedWorkouts = workouts.filter(w => w.date === dateStr)
+                    // Check if day has completed workouts - normalize dates
+                    const dayCompletedWorkouts = workouts.filter(w => {
+                      const normalizedWorkoutDate = normalizeDate(w.date)
+                      return normalizedWorkoutDate === dateStr
+                    }) || []
 
                     const hasPlanSessions = dayPlannedSessions.length > 0
                     const hasCompletedWorkouts = dayCompletedWorkouts.length > 0
-
-                    console.log(`Day ${day}: planned=${hasPlanSessions}, completed=${hasCompletedWorkouts}, workouts=${dayCompletedWorkouts.length}`)
 
                     let bgColor = 'text-[#8B949E]/50'
                     if (hasPlanSessions) {
