@@ -21,8 +21,8 @@ export default function DashboardPro() {
   const [selectedPlannedWorkout, setSelectedPlannedWorkout] = useState<PlannedWorkout | null>(null)
 
   const { workouts, loading: workoutsLoading, deleteWorkout } = useWorkouts()
-  const { dailyState, loading: dailyStateLoading } = useDailyState()
-  const { macrophases, currentPhase } = useMacrocycle()
+  const { loading: dailyStateLoading } = useDailyState()
+  const { currentPhase } = useMacrocycle()
 
   const handleDeleteWorkout = async (id: string) => {
     if (confirm('¿Estás seguro de que quieres eliminar este entreno?')) {
@@ -129,7 +129,7 @@ export default function DashboardPro() {
   weekEndDate.setDate(weekEndDate.getDate() + 6)
 
   // Parse session dates from SESSIONS data
-  const parseSessionDate = (fullDate: string, year?: number) => {
+  const parseSessionDate = (fullDate: string) => {
     // Format: "Lunes, 15 Jun 2026"
     const months: Record<string, number> = {
       'Jan': 0, 'Feb': 1, 'Mar': 2, 'Apr': 3, 'May': 4, 'Jun': 5,
@@ -156,7 +156,7 @@ export default function DashboardPro() {
     const d = parseSessionDate(s.fullDate)
     return d.toISOString().split('T')[0]
   }))
-  const completedPlannedSessions = Array.from(sessionDates).filter(date => completedDates.has(date)).length
+  const completedPlannedSessions = Array.from(sessionDates).filter((date: any) => completedDates.has(date as string)).length
   const totalPlannedSessions = sessionDates.size
 
   // Calculate current week number within the phase
@@ -589,15 +589,15 @@ export default function DashboardPro() {
                       duration_minutes: editingWorkout.duration_minutes,
                       elevation_gain: editingWorkout.elevation_gain,
                       elevation_loss: editingWorkout.elevation_loss,
-                      avg_heart_rate: editingWorkout.avg_heart_rate,
-                      avg_pace_min_km: editingWorkout.avg_pace_min_km,
+                      avg_heart_rate: editingWorkout.avg_heart_rate ?? undefined,
+                      avg_pace_min_km: editingWorkout.avg_pace_min_km ?? undefined,
                       surface: editingWorkout.surface,
                       difficulty: editingWorkout.difficulty,
                       zone: editingWorkout.zone,
                       rpe: editingWorkout.rpe,
                       sensations: editingWorkout.sensations,
                       completion_percentage: editingWorkout.completion_percentage,
-                      notes: editingWorkout.notes,
+                      notes: editingWorkout.notes ?? undefined,
                     } : undefined}
                     onSubmit={() => {
                       setShowWorkoutForm(false)
@@ -703,7 +703,7 @@ export default function DashboardPro() {
                       borderRadius: '8px',
                       color: '#E6EDF3',
                     }}
-                    formatter={(value) => value.toFixed(0)}
+                    formatter={(value) => typeof value === 'number' ? value.toFixed(0) : String(value)}
                     labelFormatter={(label) => `Semana ${label}`}
                   />
                   <Legend
